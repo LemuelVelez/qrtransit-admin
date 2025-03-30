@@ -1,11 +1,16 @@
-import { DashboardLayout } from "@/components/dashboard-layout"
-import { DashboardContent } from "@/components/dashboard-content"
+import { redirect } from "next/navigation"
+import { cookies } from "next/headers"
 
 export default function Home() {
-  return (
-    <DashboardLayout>
-      <DashboardContent />
-    </DashboardLayout>
-  )
+  // Check if user is logged in via cookie
+  const authCookie = cookies().get("appwrite-session")
+
+  if (authCookie) {
+    redirect("/dashboard")
+  } else {
+    redirect("/login")
+  }
+
+  return null
 }
 

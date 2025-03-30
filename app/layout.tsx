@@ -7,7 +7,7 @@ import { ThemeProvider } from "@/components/theme-provider"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "QR-Coded Bus Ticketing System",
+  title: "QR-Coded Bus Ticketing System - Admin",
   description: "Admin dashboard for QR-Coded Bus Ticketing System",
 }
 
