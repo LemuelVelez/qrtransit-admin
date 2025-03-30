@@ -1,15 +1,13 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
 import type React from "react"
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { checkIsAdmin, getCurrentUser, logoutUser } from "@/lib/appwrite"
-import { DashboardSidebar } from "@/components/sidebar"
-import { DashboardHeader } from "@/components/header"
+import { checkIsAdmin, getCurrentUser } from "@/lib/appwrite"
+import { DashboardLayout } from "@/components/dashboard-layout"
 
-export default function DashboardLayout({
+export default function Layout({
   children,
 }: Readonly<{
   children: React.ReactNode
@@ -41,34 +39,17 @@ export default function DashboardLayout({
     checkAuth()
   }, [router])
 
-  const handleLogout = async () => {
-    try {
-      await logoutUser()
-      router.push("/login")
-    } catch (error) {
-      console.error("Logout error:", error)
-    }
-  }
-
   if (isLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-2">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-emerald-200 border-t-emerald-600"></div>
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-primary/20"></div>
           <p className="text-sm text-muted-foreground">Loading...</p>
         </div>
       </div>
     )
   }
 
-  return (
-    <div className="flex min-h-screen bg-background">
-      <DashboardSidebar />
-      <div className="flex flex-1 flex-col">
-        <DashboardHeader user={user} onLogout={handleLogout} />
-        <main className="flex-1 p-4 md:p-6 overflow-auto">{children}</main>
-      </div>
-    </div>
-  )
+  return <DashboardLayout user={user}>{children}</DashboardLayout>
 }
 
