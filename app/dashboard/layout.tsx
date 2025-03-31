@@ -5,6 +5,7 @@ import type React from "react"
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { Loader2 } from "lucide-react"
 import { checkIsAdmin, getCurrentUser } from "@/lib/appwrite"
 import { DashboardLayout } from "@/components/dashboard-layout"
 
@@ -44,7 +45,7 @@ export default function Layout({
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-2">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-primary/20"></div>
+          <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
           <p className="text-sm text-muted-foreground">Loading...</p>
         </div>
       </div>

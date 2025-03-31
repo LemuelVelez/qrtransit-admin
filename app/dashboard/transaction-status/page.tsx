@@ -29,6 +29,7 @@ import {
   type Transaction,
   type TransactionStatus,
 } from "@/lib/transaction-service"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export default function TransactionStatusPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
@@ -42,6 +43,7 @@ export default function TransactionStatusPage() {
   const [activeTab, setActiveTab] = useState("pending")
   const [updateSuccess, setUpdateSuccess] = useState(false)
   const [updateError, setUpdateError] = useState<string | null>(null)
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false)
 
   const fetchTransactions = useCallback(async () => {
     setIsLoading(true)
@@ -58,8 +60,11 @@ export default function TransactionStatusPage() {
         fetchedTransactions = await getTransactionsByStatus("FAILED")
       }
 
+      console.log(`Fetched ${fetchedTransactions.length} transactions for tab: ${activeTab}`)
+
       setTransactions(fetchedTransactions)
       setFilteredTransactions(fetchedTransactions)
+      setInitialLoadComplete(true)
     } catch (error) {
       console.error("Error fetching transactions:", error)
     } finally {
@@ -325,8 +330,72 @@ export default function TransactionStatusPage() {
   function renderTransactionsTable() {
     if (isLoading) {
       return (
-        <div className="flex justify-center items-center py-8">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="rounded-md border overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Transaction ID</TableHead>
+                <TableHead className="hidden md:table-cell">User ID</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Amount</TableHead>
+                <TableHead className="hidden md:table-cell">Description</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {Array(5)
+                .fill(0)
+                .map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell>
+                      <Skeleton className="h-4 w-24" />
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      <Skeleton className="h-4 w-24" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-16" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-16" />
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      <Skeleton className="h-4 w-32" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-24" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-6 w-20" />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Skeleton className="h-8 w-16 ml-auto" />
+                    </TableCell>
+                  </TableRow>
+                ))}
+            </TableBody>
+          </Table>
+        </div>
+      )
+    }
+
+    // Show a message if no transactions are found after initial load
+    if (initialLoadComplete && filteredTransactions.length === 0) {
+      return (
+        <div className="rounded-md border p-8 text-center">
+          <div className="flex flex-col items-center justify-center gap-2">
+            <XCircle className="h-8 w-8 text-muted-foreground" />
+            <h3 className="text-lg font-medium">No transactions found</h3>
+            <p className="text-sm text-muted-foreground">
+              {searchQuery
+                ? "Try adjusting your search query"
+                : activeTab === "pending"
+                  ? "There are no pending transactions at the moment"
+                  : `There are no ${activeTab} transactions to display`}
+            </p>
+          </div>
         </div>
       )
     }
@@ -347,42 +416,32 @@ export default function TransactionStatusPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredTransactions.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                  No transactions found
+            {filteredTransactions.map((transaction) => (
+              <TableRow key={transaction.id}>
+                <TableCell className="font-mono text-xs max-w-[100px] truncate">{transaction.id}</TableCell>
+                <TableCell className="hidden md:table-cell max-w-[100px] truncate">{transaction.userId}</TableCell>
+                <TableCell>{getTransactionTypeLabel(transaction.type)}</TableCell>
+                <TableCell>{formatCurrency(transaction.amount)}</TableCell>
+                <TableCell className="max-w-[200px] truncate hidden md:table-cell">{transaction.description}</TableCell>
+                <TableCell className="whitespace-nowrap">{formatDate(transaction.timestamp)}</TableCell>
+                <TableCell>{getStatusBadge(transaction.status || "PENDING")}</TableCell>
+                <TableCell className="text-right">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedTransaction(transaction)
+                      setNewStatus((transaction.status as TransactionStatus) || "PENDING")
+                      setNotes("")
+                      setUpdateSuccess(false)
+                      setUpdateError(null)
+                    }}
+                  >
+                    Update
+                  </Button>
                 </TableCell>
               </TableRow>
-            ) : (
-              filteredTransactions.map((transaction) => (
-                <TableRow key={transaction.id}>
-                  <TableCell className="font-mono text-xs max-w-[100px] truncate">{transaction.id}</TableCell>
-                  <TableCell className="hidden md:table-cell max-w-[100px] truncate">{transaction.userId}</TableCell>
-                  <TableCell>{getTransactionTypeLabel(transaction.type)}</TableCell>
-                  <TableCell>{formatCurrency(transaction.amount)}</TableCell>
-                  <TableCell className="max-w-[200px] truncate hidden md:table-cell">
-                    {transaction.description}
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap">{formatDate(transaction.timestamp)}</TableCell>
-                  <TableCell>{getStatusBadge(transaction.status || "PENDING")}</TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setSelectedTransaction(transaction)
-                        setNewStatus((transaction.status as TransactionStatus) || "PENDING")
-                        setNotes("")
-                        setUpdateSuccess(false)
-                        setUpdateError(null)
-                      }}
-                    >
-                      Update
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
+            ))}
           </TableBody>
         </Table>
       </div>

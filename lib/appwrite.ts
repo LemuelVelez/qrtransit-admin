@@ -237,15 +237,17 @@ export async function resetPassword(email: string) {
   }
 }
 
-export async function confirmPasswordReset(
-userId: string, secret: string, password: string, confirmPassword: string) {
-  try {
-    // The issue is that the account.updateRecovery method expects only 3 parameters
-    // but we're passing 4. Let's fix that by using the correct method signature.
-    await account.updateRecovery(userId, secret, password);
-    return { success: true };
-  } catch (error) {
-    console.error("Password reset confirmation error:", error);
-    throw error;
+export const confirmPasswordReset = async (
+  userId: string,
+  secret: string,
+  password: string,
+  confirmPassword: string,
+) => {
+  // Validate that passwords match before calling the API
+  if (password !== confirmPassword) {
+    throw new Error("Passwords do not match")
   }
+
+  // The updateRecovery method only accepts 3 parameters
+  await account.updateRecovery(userId, secret, password)
 }

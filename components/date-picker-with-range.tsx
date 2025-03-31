@@ -1,12 +1,16 @@
 "use client"
-import { format } from "date-fns"
-import { CalendarIcon } from "lucide-react"
+
+import { useState } from "react"
+import { format, subDays, startOfMonth, endOfMonth, startOfYear } from "date-fns"
+import { CalendarIcon, X } from "lucide-react"
 import type { DateRange } from "react-day-picker"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useMediaQuery } from "@/hooks/use-media-query"
 
 interface DatePickerWithRangeProps {
   className?: string
@@ -14,39 +18,177 @@ interface DatePickerWithRangeProps {
   onDateChange: (date: DateRange | undefined) => void
 }
 
+type DatePreset = {
+  name: string
+  label: string
+  value: () => DateRange
+}
+
 export function DatePickerWithRange({ className, date, onDateChange }: DatePickerWithRangeProps) {
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false)
+  const isDesktop = useMediaQuery("(min-width: 768px)")
+
+  // Define preset date ranges
+  const datePresets: DatePreset[] = [
+    {
+      name: "today",
+      label: "Today",
+      value: () => ({
+        from: new Date(),
+        to: new Date(),
+      }),
+    },
+    {
+      name: "yesterday",
+      label: "Yesterday",
+      value: () => {
+        const yesterday = subDays(new Date(), 1)
+        return {
+          from: yesterday,
+          to: yesterday,
+        }
+      },
+    },
+    {
+      name: "last7days",
+      label: "Last 7 Days",
+      value: () => ({
+        from: subDays(new Date(), 6),
+        to: new Date(),
+      }),
+    },
+    {
+      name: "last30days",
+      label: "Last 30 Days",
+      value: () => ({
+        from: subDays(new Date(), 29),
+        to: new Date(),
+      }),
+    },
+    {
+      name: "thismonth",
+      label: "This Month",
+      value: () => ({
+        from: startOfMonth(new Date()),
+        to: new Date(),
+      }),
+    },
+    {
+      name: "lastmonth",
+      label: "Last Month",
+      value: () => {
+        const today = new Date()
+        const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1)
+        return {
+          from: startOfMonth(lastMonth),
+          to: endOfMonth(lastMonth),
+        }
+      },
+    },
+    {
+      name: "thisyear",
+      label: "This Year",
+      value: () => ({
+        from: startOfYear(new Date()),
+        to: new Date(),
+      }),
+    },
+  ]
+
+  // Handle preset selection
+  const handleSelectPreset = (preset: DatePreset) => {
+    const newRange = preset.value()
+    onDateChange(newRange)
+    setIsPopoverOpen(false)
+  }
+
+  // Clear date selection
+  const handleClearDate = () => {
+    onDateChange(undefined)
+  }
+
   return (
     <div className={cn("grid gap-2 w-full sm:w-auto", className)}>
-      <Popover>
+      <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
         <PopoverTrigger asChild>
           <Button
             id="date"
             variant={"outline"}
-            className={cn("w-full sm:w-[260px] justify-start text-left font-normal", !date && "text-muted-foreground")}
+            className={cn(
+              "w-full sm:w-[260px] justify-start text-left font-normal group",
+              !date && "text-muted-foreground",
+            )}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
             {date?.from ? (
-              date.to ? (
-                <>
-                  {format(date.from, "LLL dd, y")} - {format(date.to, "LLL dd, y")}
-                </>
-              ) : (
-                format(date.from, "LLL dd, y")
-              )
+              <>
+                <span>
+                  {date.to ? (
+                    <>
+                      {format(date.from, "MMM d, yyyy")} - {format(date.to, "MMM d, yyyy")}
+                    </>
+                  ) : (
+                    format(date.from, "MMM d, yyyy")
+                  )}
+                </span>
+                <X
+                  className="ml-auto h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleClearDate()
+                  }}
+                />
+              </>
             ) : (
-              <span>Pick a date range</span>
+              <span>Select date range</span>
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
-          <Calendar
-            initialFocus
-            mode="range"
-            defaultMonth={date?.from}
-            selected={date}
-            onSelect={onDateChange}
-            numberOfMonths={2}
-          />
+        <PopoverContent className="w-auto p-0 bg-popover" align="start">
+          <Tabs defaultValue="presets">
+            <div className="flex items-center justify-between px-4 pt-3 pb-2">
+              <TabsList className="grid grid-cols-2">
+                <TabsTrigger value="presets">Presets</TabsTrigger>
+                <TabsTrigger value="calendar">Calendar</TabsTrigger>
+              </TabsList>
+            </div>
+            <TabsContent value="presets" className="p-4 space-y-2 bg-popover">
+              <div className="grid grid-cols-2 gap-2">
+                {datePresets.map((preset) => (
+                  <Button
+                    key={preset.name}
+                    size="sm"
+                    variant="outline"
+                    className="justify-start font-normal"
+                    onClick={() => handleSelectPreset(preset)}
+                  >
+                    {preset.label}
+                  </Button>
+                ))}
+              </div>
+            </TabsContent>
+            <TabsContent value="calendar" className="p-0 border-t bg-popover">
+              <div className="bg-popover">
+                <Calendar
+                  initialFocus
+                  mode="range"
+                  defaultMonth={date?.from}
+                  selected={date}
+                  onSelect={onDateChange}
+                  numberOfMonths={isDesktop ? 2 : 1}
+                  className="p-3 bg-popover"
+                />
+              </div>
+              <div className="flex items-center justify-between p-3 border-t bg-popover">
+                <Button variant="ghost" size="sm" onClick={() => handleClearDate()}>
+                  Clear
+                </Button>
+                <Button size="sm" onClick={() => setIsPopoverOpen(false)}>
+                  Apply
+                </Button>
+              </div>
+            </TabsContent>
+          </Tabs>
         </PopoverContent>
       </Popover>
     </div>

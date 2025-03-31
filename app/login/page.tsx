@@ -49,7 +49,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-emerald-600 to-emerald-800 p-4">
-      <Card className="w-full max-w-md">
+      <Card className="w-full max-w-md shadow-lg border-0">
         <CardHeader className="space-y-1 flex flex-col items-center">
           <div className="w-16 h-16 relative mb-2">
             <Image src="/QRTransit.png" alt="QR Transit Logo" fill className="object-contain" />
@@ -76,12 +76,16 @@ export default function LoginPage() {
                 placeholder="Enter your username"
                 required
                 disabled={isLoading}
+                className="bg-white/90 dark:bg-gray-800/90"
               />
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
-                <Link href="/forgot-password" className="text-sm text-gray-600 hover:text-gray-700">
+                <Link
+                  href="/forgot-password"
+                  className="text-sm text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
+                >
                   Forgot password?
                 </Link>
               </div>
@@ -94,13 +98,13 @@ export default function LoginPage() {
                   placeholder="Enter your password"
                   required
                   disabled={isLoading}
-                  className="pr-10"
+                  className="pr-10 bg-white/90 dark:bg-gray-800/90"
                 />
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="absolute right-0 top-0 h-full px-3"
+                  className="absolute right-0 top-0 h-full px-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
                   onClick={togglePasswordVisibility}
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}

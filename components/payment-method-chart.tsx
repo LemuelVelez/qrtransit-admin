@@ -1,7 +1,6 @@
 "use client"
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from "recharts"
-import { formatCurrency } from "@/lib/utils"
 
 interface PaymentMethodChartProps {
   qrRevenue: number
@@ -14,7 +13,8 @@ export function PaymentMethodChart({ qrRevenue, cashRevenue }: PaymentMethodChar
     { name: "Cash Payments", value: cashRevenue },
   ]
 
-  const COLORS = ["hsl(var(--primary))", "hsl(var(--muted))"]
+  // Custom colors that are visually distinct
+  const COLORS = ["#0ea5e9", "#f97316"]
 
   return (
     <ResponsiveContainer width="100%" height={300}>
@@ -27,20 +27,31 @@ export function PaymentMethodChart({ qrRevenue, cashRevenue }: PaymentMethodChar
           outerRadius={80}
           fill="#8884d8"
           dataKey="value"
-          label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+          label={({ name, percent }) => {
+            // Shorten the label text for better responsiveness
+            const displayName = name === "Cash Payments" ? "Cash" : "QR"
+            return `${displayName} ${(percent * 100).toFixed(0)}%`
+          }}
         >
           {data.map((entry, index) => (
             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
           ))}
         </Pie>
         <Tooltip
-          formatter={(value: number) => formatCurrency(value)}
+          formatter={(value: number) => [`₱${value.toLocaleString()}`, ""]}
           contentStyle={{
             backgroundColor: "hsl(var(--background))",
             borderColor: "hsl(var(--border))",
+            color: "hsl(var(--foreground))",
+            borderRadius: "6px",
+            padding: "8px 12px",
+            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
           }}
         />
-        <Legend />
+        <Legend
+          formatter={(value) => <span style={{ color: "hsl(var(--foreground))" }}>{value}</span>}
+          wrapperStyle={{ fontSize: "12px" }}
+        />
       </PieChart>
     </ResponsiveContainer>
   )

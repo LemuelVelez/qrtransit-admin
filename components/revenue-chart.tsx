@@ -1,7 +1,6 @@
 "use client"
 
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from "recharts"
-import { formatCurrency } from "@/lib/utils"
 
 interface RevenueChartProps {
   data: {
@@ -29,14 +28,19 @@ export function RevenueChart({ data }: RevenueChartProps) {
           tickFormatter={(value) => `₱${value}`}
         />
         <Tooltip
-          formatter={(value: number) => [formatCurrency(value), "Revenue"]}
+          formatter={(value: number) => [`₱${value.toLocaleString()}`, "Revenue"]}
           labelFormatter={(label) => `Date: ${label}`}
           contentStyle={{
             backgroundColor: "hsl(var(--background))",
             borderColor: "hsl(var(--border))",
+            color: "hsl(var(--foreground))",
+            borderRadius: "6px",
+            padding: "8px 12px",
+            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
           }}
+          itemStyle={{ color: "hsl(var(--foreground))" }}
         />
-        <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} className="fill-primary" />
+        <Bar dataKey="total" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   )

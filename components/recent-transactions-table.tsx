@@ -32,7 +32,7 @@ export function RecentTransactionsTable() {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center py-8">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <Loader2 className="h-6 w-6 animate-spin text-sky-500" />
       </div>
     )
   }
@@ -42,11 +42,11 @@ export function RecentTransactionsTable() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Date</TableHead>
-            <TableHead>Passenger</TableHead>
-            <TableHead>Route</TableHead>
-            <TableHead>Payment</TableHead>
-            <TableHead className="text-right">Fare</TableHead>
+            <TableHead className="font-medium">Date</TableHead>
+            <TableHead className="font-medium">Passenger</TableHead>
+            <TableHead className="font-medium">Route</TableHead>
+            <TableHead className="font-medium">Payment</TableHead>
+            <TableHead className="text-right font-medium">Fare</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -65,14 +65,20 @@ export function RecentTransactionsTable() {
                   {transaction.from} → {transaction.to}
                 </TableCell>
                 <TableCell>
-                  <Badge variant={transaction.paymentMethod === "QR" ? "default" : "outline"}>
-                    {transaction.paymentMethod === "QR" ? (
+                  {transaction.paymentMethod === "QR" ? (
+                    <Badge variant="default" className="bg-sky-500 hover:bg-sky-600">
                       <QrCode className="mr-1 h-3 w-3" />
-                    ) : (
+                      {transaction.paymentMethod}
+                    </Badge>
+                  ) : (
+                    <Badge
+                      variant="outline"
+                      className="border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100"
+                    >
                       <Banknote className="mr-1 h-3 w-3" />
-                    )}
-                    {transaction.paymentMethod}
-                  </Badge>
+                      {transaction.paymentMethod}
+                    </Badge>
+                  )}
                 </TableCell>
                 <TableCell className="text-right font-medium">{transaction.fare}</TableCell>
               </TableRow>

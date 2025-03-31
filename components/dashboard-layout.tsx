@@ -31,6 +31,7 @@ import {
   SidebarGroupContent,
   SidebarSeparator,
   SidebarTrigger,
+  SidebarInset,
 } from "@/components/ui/sidebar"
 import {
   LayoutDashboard,
@@ -62,16 +63,16 @@ export function DashboardLayout({ children, user }: { children: React.ReactNode;
 
   return (
     <SidebarProvider defaultOpen={!isMobile}>
-      <div className="flex min-h-screen bg-background">
+      <div className="flex w-full min-h-screen">
         <Sidebar>
-          <SidebarHeader>
+          <SidebarHeader className="bg-sidebar">
             <div className="flex items-center gap-2 px-4 py-2">
-              <QrCode className="h-6 w-6 text-primary" />
+              <QrCode className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
               <span className="font-bold text-lg">QR Transit Admin</span>
             </div>
           </SidebarHeader>
           <SidebarSeparator />
-          <SidebarContent>
+          <SidebarContent className="bg-sidebar">
             <SidebarGroup>
               <SidebarGroupLabel>Dashboard</SidebarGroupLabel>
               <SidebarGroupContent>
@@ -160,14 +161,16 @@ export function DashboardLayout({ children, user }: { children: React.ReactNode;
               </SidebarGroupContent>
             </SidebarGroup>
           </SidebarContent>
-          <SidebarFooter>
+          <SidebarFooter className="bg-sidebar">
             <div className="px-3 py-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="w-full justify-start px-2">
                     <Avatar className="h-6 w-6 mr-2">
                       <AvatarImage src={user?.avatar} alt={user?.name || "User"} />
-                      <AvatarFallback>{getInitials(`${user?.firstname || ""} ${user?.lastname || ""}`)}</AvatarFallback>
+                      <AvatarFallback className="bg-emerald-100 text-emerald-800 dark:bg-emerald-800 dark:text-emerald-100">
+                        {getInitials(`${user?.firstname || ""} ${user?.lastname || ""}`)}
+                      </AvatarFallback>
                     </Avatar>
                     <span className="truncate">
                       {user?.firstname && user?.lastname
@@ -179,16 +182,16 @@ export function DashboardLayout({ children, user }: { children: React.ReactNode;
                 <DropdownMenuContent align="start" className="w-56">
                   <DropdownMenuLabel>My Account</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem>
+                  <DropdownMenuItem className="cursor-pointer">
                     <User className="mr-2 h-4 w-4" />
                     <span>Profile</span>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
+                  <DropdownMenuItem className="cursor-pointer">
                     <Settings className="mr-2 h-4 w-4" />
                     <span>Settings</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout}>
+                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
                     <LogOut className="mr-2 h-4 w-4" />
                     <span>Log out</span>
                   </DropdownMenuItem>
@@ -197,7 +200,7 @@ export function DashboardLayout({ children, user }: { children: React.ReactNode;
             </div>
           </SidebarFooter>
         </Sidebar>
-        <div className="flex flex-1 flex-col">
+        <SidebarInset>
           <header className="border-b bg-background">
             <div className="flex h-16 items-center px-4 md:px-6">
               <SidebarTrigger className="mr-2" />
@@ -208,7 +211,7 @@ export function DashboardLayout({ children, user }: { children: React.ReactNode;
                     <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                       <Avatar className="h-8 w-8">
                         <AvatarImage src={user?.avatar} alt={user?.name || "User"} />
-                        <AvatarFallback>
+                        <AvatarFallback className="bg-emerald-100 text-emerald-800 dark:bg-emerald-800 dark:text-emerald-100">
                           {getInitials(`${user?.firstname || ""} ${user?.lastname || ""}`)}
                         </AvatarFallback>
                       </Avatar>
@@ -221,16 +224,16 @@ export function DashboardLayout({ children, user }: { children: React.ReactNode;
                         : user?.username || "Admin User"}
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem>
+                    <DropdownMenuItem className="cursor-pointer">
                       <User className="mr-2 h-4 w-4" />
                       <span>Profile</span>
                     </DropdownMenuItem>
-                    <DropdownMenuItem>
+                    <DropdownMenuItem className="cursor-pointer">
                       <Settings className="mr-2 h-4 w-4" />
                       <span>Settings</span>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={handleLogout}>
+                    <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
                       <LogOut className="mr-2 h-4 w-4" />
                       <span>Log out</span>
                     </DropdownMenuItem>
@@ -240,7 +243,7 @@ export function DashboardLayout({ children, user }: { children: React.ReactNode;
             </div>
           </header>
           <main className="flex-1 p-4 md:p-6 overflow-auto">{children}</main>
-        </div>
+        </SidebarInset>
       </div>
     </SidebarProvider>
   )

@@ -61,7 +61,7 @@ export default function AnalyticsPage() {
         </TabsList>
 
         <TabsContent value="revenue" className="space-y-4">
-          <Card>
+          <Card className="max-w-full">
             <CardHeader>
               <CardTitle>Revenue Trends</CardTitle>
               <CardDescription>
@@ -76,8 +76,8 @@ export default function AnalyticsPage() {
             </CardHeader>
             <CardContent>
               {isLoading ? (
-                <div className="flex justify-center items-center h-[350px]">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <div className="flex justify-center items-center mx-auto h-[350px]">
+                  <Loader2 className="h-8 w-8 animate-spin text-emerald-400" />
                 </div>
               ) : (
                 <RevenueChart data={analyticsData?.dailyRevenueData || []} />
@@ -129,7 +129,7 @@ export default function AnalyticsPage() {
               <CardContent>
                 {isLoading ? (
                   <div className="flex justify-center items-center h-[200px]">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <Loader2 className="h-8 w-8 animate-spin text-emerald-400" />
                   </div>
                 ) : (
                   <PaymentMethodChart
@@ -151,7 +151,7 @@ export default function AnalyticsPage() {
             <CardContent>
               {isLoading ? (
                 <div className="flex justify-center items-center h-[300px]">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  <Loader2 className="h-8 w-8 animate-spin text-emerald-400" />
                 </div>
               ) : (
                 <TopRoutesTable routes={analyticsData?.topRoutes || []} />
@@ -167,7 +167,7 @@ export default function AnalyticsPage() {
             <CardContent>
               {isLoading ? (
                 <div className="flex justify-center items-center h-[300px]">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  <Loader2 className="h-8 w-8 animate-spin text-emerald-400" />
                 </div>
               ) : (
                 <div className="rounded-md border overflow-x-auto">
@@ -217,7 +217,7 @@ export default function AnalyticsPage() {
               <CardContent>
                 {isLoading ? (
                   <div className="flex justify-center items-center h-[350px]">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <Loader2 className="h-8 w-8 animate-spin text-emerald-400" />
                   </div>
                 ) : (
                   <PaymentMethodChart
