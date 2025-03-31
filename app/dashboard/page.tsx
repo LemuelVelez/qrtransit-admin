@@ -23,38 +23,39 @@ export default function DashboardPage() {
     from: subDays(new Date(), 30),
     to: new Date(),
   })
+  const [activeTab, setActiveTab] = useState("overview")
+
+  const fetchData = async () => {
+    setIsLoading(true)
+    try {
+      const data = await getAnalyticsData(dateRange?.from, dateRange?.to)
+      setAnalyticsData(data)
+    } catch (error) {
+      console.error("Error fetching analytics data:", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true)
-      try {
-        const data = await getAnalyticsData(dateRange?.from, dateRange?.to)
-        setAnalyticsData(data)
-      } catch (error) {
-        console.error("Error fetching analytics data:", error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
     fetchData()
-  }, [dateRange])
+  }, [dateRange]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Dashboard</h1>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
           <DatePickerWithRange date={dateRange} onDateChange={setDateRange} />
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" className="w-full sm:w-auto">
             <Download className="mr-2 h-4 w-4" />
             <span>Export</span>
           </Button>
         </div>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList className="w-full sm:w-auto">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
@@ -62,7 +63,7 @@ export default function DashboardPage() {
 
         <TabsContent value="overview" className="space-y-4">
           {isLoading ? (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
               {[...Array(4)].map((_, i) => (
                 <Card key={i} className="animate-pulse">
                   <CardHeader className="space-y-0 pb-2">
@@ -76,7 +77,7 @@ export default function DashboardPage() {
               ))}
             </div>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
@@ -135,8 +136,8 @@ export default function DashboardPage() {
             </div>
           )}
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-            <Card className="col-span-4">
+          <div className="grid gap-4 grid-cols-1 lg:grid-cols-7">
+            <Card className="col-span-full lg:col-span-4">
               <CardHeader>
                 <CardTitle>Revenue Overview</CardTitle>
                 <CardDescription>
@@ -158,7 +159,7 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
 
-            <Card className="col-span-3">
+            <Card className="col-span-full lg:col-span-3">
               <CardHeader>
                 <CardTitle>Payment Methods</CardTitle>
                 <CardDescription>Distribution between QR and cash payments</CardDescription>
@@ -176,8 +177,8 @@ export default function DashboardPage() {
             </Card>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-            <Card className="col-span-4">
+          <div className="grid gap-4 grid-cols-1 lg:grid-cols-7">
+            <Card className="col-span-full lg:col-span-4">
               <CardHeader>
                 <CardTitle>Recent Transactions</CardTitle>
                 <CardDescription>Latest ticket sales across all routes</CardDescription>
@@ -191,7 +192,7 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
 
-            <Card className="col-span-3">
+            <Card className="col-span-full lg:col-span-3">
               <CardHeader>
                 <CardTitle>Top Routes</CardTitle>
                 <CardDescription>Most popular routes by ticket sales</CardDescription>

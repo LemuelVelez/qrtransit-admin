@@ -238,10 +238,7 @@ export async function resetPassword(email: string) {
 }
 
 export async function confirmPasswordReset(
-  userId: string,
-  secret: string,
-  password: string
-) {
+userId: string, secret: string, password: string, confirmPassword: string) {
   try {
     // The issue is that the account.updateRecovery method expects only 3 parameters
     // but we're passing 4. Let's fix that by using the correct method signature.

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
 import { useState, useEffect } from "react"
@@ -21,38 +22,39 @@ export default function AnalyticsPage() {
     from: subDays(new Date(), 30),
     to: new Date(),
   })
+  const [activeTab, setActiveTab] = useState("revenue")
+
+  const fetchData = async () => {
+    setIsLoading(true)
+    try {
+      const data = await getAnalyticsData(dateRange?.from, dateRange?.to)
+      setAnalyticsData(data)
+    } catch (error) {
+      console.error("Error fetching analytics data:", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true)
-      try {
-        const data = await getAnalyticsData(dateRange?.from, dateRange?.to)
-        setAnalyticsData(data)
-      } catch (error) {
-        console.error("Error fetching analytics data:", error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-
     fetchData()
-  }, [dateRange])
+  }, [dateRange]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Analytics</h1>
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Analytics</h1>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
           <DatePickerWithRange date={dateRange} onDateChange={setDateRange} />
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" className="w-full sm:w-auto">
             <Download className="mr-2 h-4 w-4" />
             <span>Export</span>
           </Button>
         </div>
       </div>
 
-      <Tabs defaultValue="revenue" className="space-y-4">
-        <TabsList>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList className="w-full sm:w-auto">
           <TabsTrigger value="revenue">Revenue</TabsTrigger>
           <TabsTrigger value="routes">Routes</TabsTrigger>
           <TabsTrigger value="payment">Payment Methods</TabsTrigger>
@@ -83,7 +85,7 @@ export default function AnalyticsPage() {
             </CardContent>
           </Card>
 
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
             <Card>
               <CardHeader>
                 <CardTitle>Revenue Summary</CardTitle>
@@ -168,7 +170,7 @@ export default function AnalyticsPage() {
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
               ) : (
-                <div className="rounded-md border">
+                <div className="rounded-md border overflow-x-auto">
                   <table className="w-full">
                     <thead>
                       <tr className="border-b bg-muted/50">
@@ -206,8 +208,8 @@ export default function AnalyticsPage() {
         </TabsContent>
 
         <TabsContent value="payment" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card className="md:col-span-2">
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+            <Card className="col-span-1 md:col-span-2">
               <CardHeader>
                 <CardTitle>Payment Methods</CardTitle>
                 <CardDescription>Distribution between QR and cash payments</CardDescription>

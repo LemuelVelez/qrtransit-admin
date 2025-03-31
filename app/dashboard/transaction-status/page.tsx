@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -19,8 +20,6 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import type { DateRange } from "react-day-picker"
-import { subDays } from "date-fns"
 import { Search, Loader2, CheckCircle, XCircle, Clock, AlertCircle } from "lucide-react"
 import { formatCurrency, formatDate } from "@/lib/utils"
 import {
@@ -35,25 +34,16 @@ export default function TransactionStatusPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([])
   const [searchQuery, setSearchQuery] = useState("")
-  const [statusFilter, setStatusFilter] = useState<TransactionStatus | "all">("PENDING")
   const [isLoading, setIsLoading] = useState(true)
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null)
   const [isUpdating, setIsUpdating] = useState(false)
   const [newStatus, setNewStatus] = useState<TransactionStatus>("COMPLETED")
   const [notes, setNotes] = useState("")
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: subDays(new Date(), 30),
-    to: new Date(),
-  })
   const [activeTab, setActiveTab] = useState("pending")
   const [updateSuccess, setUpdateSuccess] = useState(false)
   const [updateError, setUpdateError] = useState<string | null>(null)
 
-  useEffect(() => {
-    fetchTransactions()
-  }, [activeTab])
-
-  const fetchTransactions = async () => {
+  const fetchTransactions = useCallback(async () => {
     setIsLoading(true)
     try {
       let fetchedTransactions: Transaction[] = []
@@ -75,13 +65,13 @@ export default function TransactionStatusPage() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [activeTab])
 
   useEffect(() => {
-    filterTransactions()
-  }, [searchQuery, transactions])
+    fetchTransactions()
+  }, [activeTab, fetchTransactions])
 
-  const filterTransactions = () => {
+  const filterTransactions = useCallback(() => {
     if (searchQuery.trim() === "") {
       setFilteredTransactions(transactions)
     } else {
@@ -95,7 +85,11 @@ export default function TransactionStatusPage() {
       )
       setFilteredTransactions(filtered)
     }
-  }
+  }, [searchQuery, transactions])
+
+  useEffect(() => {
+    filterTransactions()
+  }, [filterTransactions])
 
   const handleUpdateStatus = async () => {
     if (!selectedTransaction) return
@@ -135,7 +129,7 @@ export default function TransactionStatusPage() {
     switch (status) {
       case "COMPLETED":
         return (
-          <Badge className="bg-emerald-500 hover:bg-emerald-600">
+          <Badge className="bg-emerald-500 hover:bg-emerald-600 text-white">
             <CheckCircle className="mr-1 h-3 w-3" />
             Completed
           </Badge>
@@ -177,7 +171,7 @@ export default function TransactionStatusPage() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Transaction Status Management</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Transaction Status Management</h1>
       </div>
 
       <Card>
@@ -187,19 +181,19 @@ export default function TransactionStatusPage() {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="pending" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-            <div className="flex items-center justify-between">
-              <TabsList>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <TabsList className="w-full sm:w-auto">
                 <TabsTrigger value="pending">Pending</TabsTrigger>
                 <TabsTrigger value="completed">Completed</TabsTrigger>
                 <TabsTrigger value="failed">Failed</TabsTrigger>
-                <TabsTrigger value="all">All Transactions</TabsTrigger>
+                <TabsTrigger value="all">All</TabsTrigger>
               </TabsList>
 
-              <div className="relative">
+              <div className="relative w-full sm:w-auto">
                 <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   placeholder="Search transactions..."
-                  className="pl-8 w-[300px]"
+                  className="pl-8 w-full sm:w-[300px]"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -233,7 +227,7 @@ export default function TransactionStatusPage() {
           </DialogHeader>
 
           {updateSuccess && (
-            <Alert className="bg-emerald-50 text-emerald-800 border-emerald-200">
+            <Alert className="bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-200 dark:border-emerald-900">
               <CheckCircle className="h-4 w-4" />
               <AlertDescription>Transaction status updated successfully!</AlertDescription>
             </Alert>
@@ -249,10 +243,10 @@ export default function TransactionStatusPage() {
           <div className="space-y-4 py-4">
             {selectedTransaction && (
               <div className="grid gap-4 py-2">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-muted-foreground">Transaction ID</Label>
-                    <p className="font-mono text-sm">{selectedTransaction.id}</p>
+                    <p className="font-mono text-sm break-all">{selectedTransaction.id}</p>
                   </div>
                   <div>
                     <Label className="text-muted-foreground">Amount</Label>
@@ -260,7 +254,7 @@ export default function TransactionStatusPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-muted-foreground">Type</Label>
                     <p>{getTransactionTypeLabel(selectedTransaction.type)}</p>
@@ -303,11 +297,16 @@ export default function TransactionStatusPage() {
             </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setSelectedTransaction(null)} disabled={isUpdating}>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setSelectedTransaction(null)}
+              disabled={isUpdating}
+              className="w-full sm:w-auto"
+            >
               Cancel
             </Button>
-            <Button onClick={handleUpdateStatus} disabled={isUpdating || updateSuccess}>
+            <Button onClick={handleUpdateStatus} disabled={isUpdating || updateSuccess} className="w-full sm:w-auto">
               {isUpdating ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -333,15 +332,15 @@ export default function TransactionStatusPage() {
     }
 
     return (
-      <div className="rounded-md border">
+      <div className="rounded-md border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Transaction ID</TableHead>
-              <TableHead>User ID</TableHead>
+              <TableHead className="hidden md:table-cell">User ID</TableHead>
               <TableHead>Type</TableHead>
               <TableHead>Amount</TableHead>
-              <TableHead>Description</TableHead>
+              <TableHead className="hidden md:table-cell">Description</TableHead>
               <TableHead>Date</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Actions</TableHead>
@@ -357,12 +356,14 @@ export default function TransactionStatusPage() {
             ) : (
               filteredTransactions.map((transaction) => (
                 <TableRow key={transaction.id}>
-                  <TableCell className="font-mono text-xs">{transaction.id}</TableCell>
-                  <TableCell>{transaction.userId}</TableCell>
+                  <TableCell className="font-mono text-xs max-w-[100px] truncate">{transaction.id}</TableCell>
+                  <TableCell className="hidden md:table-cell max-w-[100px] truncate">{transaction.userId}</TableCell>
                   <TableCell>{getTransactionTypeLabel(transaction.type)}</TableCell>
                   <TableCell>{formatCurrency(transaction.amount)}</TableCell>
-                  <TableCell className="max-w-[200px] truncate">{transaction.description}</TableCell>
-                  <TableCell>{formatDate(transaction.timestamp)}</TableCell>
+                  <TableCell className="max-w-[200px] truncate hidden md:table-cell">
+                    {transaction.description}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap">{formatDate(transaction.timestamp)}</TableCell>
                   <TableCell>{getStatusBadge(transaction.status || "PENDING")}</TableCell>
                   <TableCell className="text-right">
                     <Button
@@ -376,7 +377,7 @@ export default function TransactionStatusPage() {
                         setUpdateError(null)
                       }}
                     >
-                      Update Status
+                      Update
                     </Button>
                   </TableCell>
                 </TableRow>

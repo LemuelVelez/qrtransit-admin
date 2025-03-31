@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
 import type React from "react"
@@ -43,10 +44,12 @@ import {
   LogOut,
   User,
 } from "lucide-react"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 export function DashboardLayout({ children, user }: { children: React.ReactNode; user: any }) {
   const router = useRouter()
   const pathname = usePathname()
+  const isMobile = useIsMobile()
 
   const handleLogout = async () => {
     try {
@@ -58,7 +61,7 @@ export function DashboardLayout({ children, user }: { children: React.ReactNode;
   }
 
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={!isMobile}>
       <div className="flex min-h-screen bg-background">
         <Sidebar>
           <SidebarHeader>

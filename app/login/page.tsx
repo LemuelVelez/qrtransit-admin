@@ -81,7 +81,7 @@ export default function LoginPage() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
-                <Link href="/forgot-password" className="text-sm text-emerald-600 hover:text-emerald-700">
+                <Link href="/forgot-password" className="text-sm text-gray-600 hover:text-gray-700">
                   Forgot password?
                 </Link>
               </div>
@@ -125,7 +125,7 @@ export default function LoginPage() {
           </form>
         </CardContent>
         <CardFooter className="flex justify-center">
-          <p className="text-sm text-muted-foreground">QR-Coded Bus Ticketing System Admin Portal</p>
+          <p className="text-sm text-center text-muted-foreground">QR-Coded Bus Ticketing System Admin Portal</p>
         </CardFooter>
       </Card>
     </div>

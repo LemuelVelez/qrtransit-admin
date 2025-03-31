@@ -57,11 +57,17 @@ export function UserRoleDialog({ user, open, onOpenChange, onRoleChange, isUpdat
               </SelectContent>
             </Select>
           </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={isUpdating}>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+              disabled={isUpdating}
+              className="w-full sm:w-auto"
+            >
               Cancel
             </Button>
-            <Button type="submit" disabled={isUpdating}>
+            <Button type="submit" disabled={isUpdating} className="w-full sm:w-auto">
               {isUpdating ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

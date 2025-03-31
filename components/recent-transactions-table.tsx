@@ -38,7 +38,7 @@ export function RecentTransactionsTable() {
   }
 
   return (
-    <div className="rounded-md border">
+    <div className="rounded-md border overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
@@ -59,9 +59,9 @@ export function RecentTransactionsTable() {
           ) : (
             transactions.map((transaction) => (
               <TableRow key={transaction.id}>
-                <TableCell>{formatDate(transaction.timestamp)}</TableCell>
+                <TableCell className="whitespace-nowrap">{formatDate(transaction.timestamp)}</TableCell>
                 <TableCell className="font-medium">{transaction.passengerName}</TableCell>
-                <TableCell>
+                <TableCell className="whitespace-nowrap">
                   {transaction.from} → {transaction.to}
                 </TableCell>
                 <TableCell>

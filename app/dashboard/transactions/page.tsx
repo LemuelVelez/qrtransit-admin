@@ -24,27 +24,27 @@ export default function TransactionsPage() {
     to: new Date(),
   })
 
-  useEffect(() => {
-    const fetchTrips = async () => {
-      setIsLoading(true)
-      try {
-        let tripsData
-        if (dateRange?.from && dateRange?.to) {
-          tripsData = await getTripsByDateRange(dateRange.from, dateRange.to)
-        } else {
-          tripsData = await getAllTrips()
-        }
-        setTrips(tripsData)
-        setFilteredTrips(tripsData)
-      } catch (error) {
-        console.error("Error fetching trips:", error)
-      } finally {
-        setIsLoading(false)
+  const fetchTrips = async () => {
+    setIsLoading(true)
+    try {
+      let tripsData
+      if (dateRange?.from && dateRange?.to) {
+        tripsData = await getTripsByDateRange(dateRange.from, dateRange.to)
+      } else {
+        tripsData = await getAllTrips()
       }
+      setTrips(tripsData)
+      setFilteredTrips(tripsData)
+    } catch (error) {
+      console.error("Error fetching trips:", error)
+    } finally {
+      setIsLoading(false)
     }
+  }
 
+  useEffect(() => {
     fetchTrips()
-  }, [dateRange])
+  }, [dateRange]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (searchQuery.trim() === "") {
@@ -56,7 +56,7 @@ export default function TransactionsPage() {
           trip.passengerName.toLowerCase().includes(query) ||
           trip.from.toLowerCase().includes(query) ||
           trip.to.toLowerCase().includes(query) ||
-          trip.busNumber?.toLowerCase().includes(query) ||
+          (trip.busNumber && trip.busNumber.toLowerCase().includes(query)) ||
           trip.transactionId.includes(query),
       )
       setFilteredTrips(filtered)
@@ -96,11 +96,11 @@ export default function TransactionsPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Transactions</h1>
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Transactions</h1>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
           <DatePickerWithRange date={dateRange} onDateChange={setDateRange} />
-          <Button variant="outline" size="sm" onClick={handleExport}>
+          <Button variant="outline" size="sm" onClick={handleExport} className="w-full sm:w-auto">
             <Download className="mr-2 h-4 w-4" />
             <span>Export</span>
           </Button>
@@ -113,12 +113,12 @@ export default function TransactionsPage() {
           <CardDescription>View all ticket sales and transactions</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-between mb-4">
-            <div className="relative max-w-sm">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-4">
+            <div className="relative w-full sm:max-w-sm">
               <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Search transactions..."
-                className="pl-8"
+                className="pl-8 w-full"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -130,7 +130,7 @@ export default function TransactionsPage() {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : (
-            <div className="rounded-md border">
+            <div className="rounded-md border overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -140,7 +140,7 @@ export default function TransactionsPage() {
                     <TableHead>Bus #</TableHead>
                     <TableHead>Payment</TableHead>
                     <TableHead className="text-right">Fare</TableHead>
-                    <TableHead>Transaction ID</TableHead>
+                    <TableHead className="hidden md:table-cell">Transaction ID</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -153,9 +153,9 @@ export default function TransactionsPage() {
                   ) : (
                     filteredTrips.map((trip) => (
                       <TableRow key={trip.id}>
-                        <TableCell>{formatDate(trip.timestamp)}</TableCell>
+                        <TableCell className="whitespace-nowrap">{formatDate(trip.timestamp)}</TableCell>
                         <TableCell className="font-medium">{trip.passengerName}</TableCell>
-                        <TableCell>
+                        <TableCell className="whitespace-nowrap">
                           {trip.from} → {trip.to}
                         </TableCell>
                         <TableCell>{trip.busNumber || "N/A"}</TableCell>
@@ -170,7 +170,7 @@ export default function TransactionsPage() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right font-medium">{trip.fare}</TableCell>
-                        <TableCell className="font-mono text-xs">{trip.transactionId}</TableCell>
+                        <TableCell className="font-mono text-xs hidden md:table-cell">{trip.transactionId}</TableCell>
                       </TableRow>
                     ))
                   )}

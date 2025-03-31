@@ -33,20 +33,20 @@ export default function UsersPage() {
   const [showRoleDialog, setShowRoleDialog] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
 
-  useEffect(() => {
-    const fetchUsers = async () => {
-      setIsLoading(true)
-      try {
-        const allUsers = await getAllUsers()
-        setUsers(allUsers)
-        setFilteredUsers(allUsers)
-      } catch (error) {
-        console.error("Error fetching users:", error)
-      } finally {
-        setIsLoading(false)
-      }
+  const fetchUsers = async () => {
+    setIsLoading(true)
+    try {
+      const allUsers = await getAllUsers()
+      setUsers(allUsers)
+      setFilteredUsers(allUsers)
+    } catch (error) {
+      console.error("Error fetching users:", error)
+    } finally {
+      setIsLoading(false)
     }
+  }
 
+  useEffect(() => {
     fetchUsers()
   }, [])
 
@@ -74,9 +74,7 @@ export default function UsersPage() {
 
       // Update local state
       setUsers(users.map((user) => (user.userId === userId ? { ...user, role: newRole } : user)))
-
       setFilteredUsers(filteredUsers.map((user) => (user.userId === userId ? { ...user, role: newRole } : user)))
-
       setShowRoleDialog(false)
     } catch (error) {
       console.error("Error updating user role:", error)
@@ -101,7 +99,7 @@ export default function UsersPage() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">User Management</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">User Management</h1>
       </div>
 
       <Card>
@@ -111,7 +109,7 @@ export default function UsersPage() {
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-between mb-4">
-            <div className="relative max-w-sm">
+            <div className="relative w-full max-w-sm">
               <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Search users..."
@@ -127,16 +125,16 @@ export default function UsersPage() {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : (
-            <div className="rounded-md border">
+            <div className="rounded-md border overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Name</TableHead>
-                    <TableHead>Username</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Phone</TableHead>
+                    <TableHead className="hidden md:table-cell">Username</TableHead>
+                    <TableHead className="hidden md:table-cell">Email</TableHead>
+                    <TableHead className="hidden md:table-cell">Phone</TableHead>
                     <TableHead>Role</TableHead>
-                    <TableHead>Created</TableHead>
+                    <TableHead className="hidden md:table-cell">Created</TableHead>
                     <TableHead className="w-[80px]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -153,13 +151,13 @@ export default function UsersPage() {
                         <TableCell className="font-medium">
                           {user.firstname} {user.lastname}
                         </TableCell>
-                        <TableCell>{user.username}</TableCell>
-                        <TableCell>{user.email}</TableCell>
-                        <TableCell>{user.phonenumber}</TableCell>
+                        <TableCell className="hidden md:table-cell">{user.username}</TableCell>
+                        <TableCell className="hidden md:table-cell">{user.email}</TableCell>
+                        <TableCell className="hidden md:table-cell">{user.phonenumber}</TableCell>
                         <TableCell>
                           <Badge variant={getRoleBadgeVariant(user.role)}>{user.role || "passenger"}</Badge>
                         </TableCell>
-                        <TableCell>{formatDate(user.createdAt)}</TableCell>
+                        <TableCell className="hidden md:table-cell">{formatDate(user.createdAt)}</TableCell>
                         <TableCell>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
