@@ -240,7 +240,7 @@ async function recalculateAllBalances(userId: string): Promise<void> {
 }
 
 // Create transaction notification
-async function createTransactionNotification(transaction: Transaction, specificUserId?: string): Promise<void> {
+async function createTransactionNotification(transaction: Transaction): Promise<void> {
   try {
     // This is a simplified version for the admin dashboard
     // In a real implementation, you would create a notification in your notifications collection
