@@ -49,7 +49,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-emerald-600 to-emerald-800 p-4">
-      <Card className="w-full max-w-md shadow-lg border-0">
+      <Card className="w-full bg-gray-500 max-w-md shadow-lg border-0">
         <CardHeader className="space-y-1 flex flex-col items-center">
           <div className="w-16 h-16 relative mb-2">
             <Image src="/QRTransit.png" alt="QR Transit Logo" fill className="object-contain" />

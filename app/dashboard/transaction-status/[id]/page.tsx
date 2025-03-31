@@ -1,23 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-"use client"
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Loader2, ArrowLeft } from 'lucide-react'
+import { Loader2, ArrowLeft } from "lucide-react"
 import { getTransactionById } from "@/lib/transaction-service"
 import { TransactionDetails } from "@/components/transaction-details"
 import { TransactionStatusHistory } from "@/components/transaction-status-history"
 
-// Make sure this type matches what Next.js expects
-interface PageProps {
-  params: {
-    id: string;
-  };
-}
-
-export default function TransactionDetailPage({ params }: PageProps) {
+export default function TransactionDetailPage({ params }: { params: { id: string } }) {
   const [transaction, setTransaction] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
