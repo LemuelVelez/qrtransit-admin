@@ -136,9 +136,6 @@ const config: Config = {
         ".text-accent-foreground": {
           color: "hsl(var(--accent-foreground))",
         },
-        ".border-border": {
-          "border-color": "hsl(var(--border))",
-        },
         ".outline-ring\\/50": {
           "outline-color": "hsl(var(--ring) / 0.1)",
         },
