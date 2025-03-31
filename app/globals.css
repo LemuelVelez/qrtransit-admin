@@ -167,6 +167,6 @@ select,
 
 /* Loading spinner enhancement */
 .loading-spinner {
-  @apply animate-spin text-primary;
+  animation: spin 1s linear infinite;
+  color: hsl(var(--primary));
 }
-
