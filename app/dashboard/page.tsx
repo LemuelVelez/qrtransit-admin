@@ -104,7 +104,7 @@ export default function DashboardPage() {
           ["Cash Payments", formatPesoCurrency(analyticsData.cashRevenue || 0)],
         ],
         theme: "grid",
-        headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+        headStyles: { fillColor: [34, 51, 102], textColor: 255 }, // Updated to primary color
         styles: {
           fontSize: 10,
           cellPadding: 3,
@@ -132,7 +132,7 @@ export default function DashboardPage() {
           head: [["Date", "Revenue"]],
           body: dailyRevenueData,
           theme: "grid",
-          headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+          headStyles: { fillColor: [34, 51, 102], textColor: 255 }, // Updated to primary color
           styles: {
             fontSize: 10,
             cellPadding: 3,
@@ -179,7 +179,7 @@ export default function DashboardPage() {
           ],
           body: topRoutesData,
           theme: "grid",
-          headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+          headStyles: { fillColor: [34, 51, 102], textColor: 255 }, // Updated to primary color
           styles: {
             fontSize: 10, // Default font size for other cells
             cellPadding: 3,
@@ -231,7 +231,7 @@ export default function DashboardPage() {
           head: [["Date", "Passenger", "Route", "Payment", "Fare"]],
           body: transactionsData,
           theme: "grid",
-          headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+          headStyles: { fillColor: [34, 51, 102], textColor: 255 }, // Updated to primary color
           styles: {
             fontSize: 9,
             cellPadding: 3,
@@ -271,9 +271,9 @@ export default function DashboardPage() {
 
   return (
     <TooltipProvider>
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 font-body">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Dashboard</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight font-heading text-content">Dashboard</h1>
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
             <DatePickerWithRange date={dateRange} onDateChange={setDateRange} />
             <Tooltip>
@@ -281,7 +281,7 @@ export default function DashboardPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="w-full sm:w-auto"
+                  className="w-full sm:w-auto bg-white border-secondary hover:bg-secondary-2/20 text-content"
                   onClick={handleExport}
                   disabled={isLoading || !analyticsData}
                 >
@@ -302,40 +302,42 @@ export default function DashboardPage() {
               Array(4)
                 .fill(0)
                 .map((_, i) => (
-                  <Card key={i} className="min-h-[120px]">
+                  <Card key={i} className="min-h-[120px] border-secondary-2/30 bg-white">
                     <CardHeader className="space-y-0 pb-2">
                       <div className="flex items-center justify-between">
-                        <Skeleton className="h-5 w-24" />
-                        <Skeleton className="h-4 w-4 rounded-full" />
+                        <Skeleton className="h-5 w-24 bg-secondary/20" />
+                        <Skeleton className="h-4 w-4 rounded-full bg-secondary/20" />
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <Skeleton className="h-7 w-28 mb-1" />
-                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-7 w-28 mb-1 bg-secondary/20" />
+                      <Skeleton className="h-4 w-32 bg-secondary/20" />
                     </CardContent>
                   </Card>
                 ))
             ) : (
               <>
-                <Card className="min-h-[120px]">
+                <Card className="min-h-[120px] border-secondary-2/30 bg-white">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <div className="flex items-center">
-                      <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+                      <CardTitle className="text-sm font-medium text-content">Total Revenue</CardTitle>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Info className="h-3.5 w-3.5 ml-1 text-muted-foreground cursor-help" />
+                          <Info className="h-3.5 w-3.5 ml-1 text-secondary cursor-help" />
                         </TooltipTrigger>
                         <TooltipContent>Total revenue from all payment methods</TooltipContent>
                       </Tooltip>
                     </div>
-                    <CreditCard className="h-4 w-4 text-muted-foreground" />
+                    <CreditCard className="h-4 w-4 text-accent" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{formatCurrency(analyticsData?.totalRevenue || 0)}</div>
+                    <div className="text-2xl font-bold text-primary-dark">
+                      {formatCurrency(analyticsData?.totalRevenue || 0)}
+                    </div>
                     {(() => {
                       const { value, isPositive } = formatPercentageChange(analyticsData?.revenueChange)
                       return (
-                        <p className="text-xs text-muted-foreground flex items-center mt-1">
+                        <p className="text-xs text-secondary flex items-center mt-1">
                           {isPositive ? (
                             <ArrowUp className="mr-1 h-3 w-3 text-emerald-500" />
                           ) : (
@@ -348,25 +350,25 @@ export default function DashboardPage() {
                   </CardContent>
                 </Card>
 
-                <Card className="min-h-[120px]">
+                <Card className="min-h-[120px] border-secondary-2/30 bg-white">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <div className="flex items-center">
-                      <CardTitle className="text-sm font-medium">Tickets Sold</CardTitle>
+                      <CardTitle className="text-sm font-medium text-content">Tickets Sold</CardTitle>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Info className="h-3.5 w-3.5 ml-1 text-muted-foreground cursor-help" />
+                          <Info className="h-3.5 w-3.5 ml-1 text-secondary cursor-help" />
                         </TooltipTrigger>
                         <TooltipContent>Total number of tickets sold in the selected period</TooltipContent>
                       </Tooltip>
                     </div>
-                    <Ticket className="h-4 w-4 text-muted-foreground" />
+                    <Ticket className="h-4 w-4 text-accent" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{analyticsData?.totalTrips || 0}</div>
+                    <div className="text-2xl font-bold text-primary-dark">{analyticsData?.totalTrips || 0}</div>
                     {(() => {
                       const { value, isPositive } = formatPercentageChange(analyticsData?.tripsChange)
                       return (
-                        <p className="text-xs text-muted-foreground flex items-center mt-1">
+                        <p className="text-xs text-secondary flex items-center mt-1">
                           {isPositive ? (
                             <ArrowUp className="mr-1 h-3 w-3 text-emerald-500" />
                           ) : (
@@ -379,25 +381,27 @@ export default function DashboardPage() {
                   </CardContent>
                 </Card>
 
-                <Card className="min-h-[120px]">
+                <Card className="min-h-[120px] border-secondary-2/30 bg-white">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <div className="flex items-center">
-                      <CardTitle className="text-sm font-medium">QR Payments</CardTitle>
+                      <CardTitle className="text-sm font-medium text-content">QR Payments</CardTitle>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Info className="h-3.5 w-3.5 ml-1 text-muted-foreground cursor-help" />
+                          <Info className="h-3.5 w-3.5 ml-1 text-secondary cursor-help" />
                         </TooltipTrigger>
                         <TooltipContent>Revenue from digital QR code payments</TooltipContent>
                       </Tooltip>
                     </div>
-                    <Users className="h-4 w-4 text-muted-foreground" />
+                    <Users className="h-4 w-4 text-accent" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{formatCurrency(analyticsData?.qrRevenue || 0)}</div>
+                    <div className="text-2xl font-bold text-primary-dark">
+                      {formatCurrency(analyticsData?.qrRevenue || 0)}
+                    </div>
                     {(() => {
                       const { value, isPositive } = formatPercentageChange(analyticsData?.qrRevenueChange)
                       return (
-                        <p className="text-xs text-muted-foreground flex items-center mt-1">
+                        <p className="text-xs text-secondary flex items-center mt-1">
                           {isPositive ? (
                             <ArrowUp className="mr-1 h-3 w-3 text-emerald-500" />
                           ) : (
@@ -410,25 +414,27 @@ export default function DashboardPage() {
                   </CardContent>
                 </Card>
 
-                <Card className="min-h-[120px]">
+                <Card className="min-h-[120px] border-secondary-2/30 bg-white">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <div className="flex items-center">
-                      <CardTitle className="text-sm font-medium">Cash Payments</CardTitle>
+                      <CardTitle className="text-sm font-medium text-content">Cash Payments</CardTitle>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Info className="h-3.5 w-3.5 ml-1 text-muted-foreground cursor-help" />
+                          <Info className="h-3.5 w-3.5 ml-1 text-secondary cursor-help" />
                         </TooltipTrigger>
                         <TooltipContent>Revenue from traditional cash payments</TooltipContent>
                       </Tooltip>
                     </div>
-                    <Bus className="h-4 w-4 text-muted-foreground" />
+                    <Bus className="h-4 w-4 text-accent" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{formatCurrency(analyticsData?.cashRevenue || 0)}</div>
+                    <div className="text-2xl font-bold text-primary-dark">
+                      {formatCurrency(analyticsData?.cashRevenue || 0)}
+                    </div>
                     {(() => {
                       const { value, isPositive } = formatPercentageChange(analyticsData?.cashRevenueChange)
                       return (
-                        <p className="text-xs text-muted-foreground flex items-center mt-1">
+                        <p className="text-xs text-secondary flex items-center mt-1">
                           {isPositive ? (
                             <ArrowUp className="mr-1 h-3 w-3 text-emerald-500" />
                           ) : (
@@ -446,18 +452,18 @@ export default function DashboardPage() {
 
           {/* Charts */}
           <div className="grid gap-4 grid-cols-1 lg:grid-cols-7">
-            <Card className="col-span-full lg:col-span-4">
+            <Card className="col-span-full lg:col-span-4 border-secondary-2/30 bg-white">
               <CardHeader>
                 <div className="flex items-center">
-                  <CardTitle>Revenue Overview</CardTitle>
+                  <CardTitle className="font-heading text-content">Revenue Overview</CardTitle>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Info className="h-4 w-4 ml-2 text-muted-foreground cursor-help" />
+                      <Info className="h-4 w-4 ml-2 text-secondary cursor-help" />
                     </TooltipTrigger>
                     <TooltipContent>Daily revenue trends for the selected date range</TooltipContent>
                   </Tooltip>
                 </div>
-                <CardDescription>
+                <CardDescription className="text-secondary">
                   {dateRange?.from && dateRange?.to ? (
                     <>
                       {format(dateRange.from, "LLL dd, y")} - {format(dateRange.to, "LLL dd, y")}
@@ -470,7 +476,7 @@ export default function DashboardPage() {
               <CardContent>
                 {isLoading ? (
                   <div className="h-[300px] flex items-center justify-center">
-                    <Skeleton className="h-[280px] w-full rounded-md" />
+                    <Skeleton className="h-[280px] w-full rounded-md bg-secondary/20" />
                   </div>
                 ) : (
                   <RevenueChart data={analyticsData?.dailyRevenueData || []} />
@@ -478,23 +484,23 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
 
-            <Card className="col-span-full lg:col-span-3">
+            <Card className="col-span-full lg:col-span-3 border-secondary-2/30 bg-white">
               <CardHeader>
                 <div className="flex items-center">
-                  <CardTitle>Payment Methods</CardTitle>
+                  <CardTitle className="font-heading text-content">Payment Methods</CardTitle>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Info className="h-4 w-4 ml-2 text-muted-foreground cursor-help" />
+                      <Info className="h-4 w-4 ml-2 text-secondary cursor-help" />
                     </TooltipTrigger>
                     <TooltipContent>Distribution of revenue between QR and cash payment methods</TooltipContent>
                   </Tooltip>
                 </div>
-                <CardDescription>Distribution between QR and cash payments</CardDescription>
+                <CardDescription className="text-secondary">Distribution between QR and cash payments</CardDescription>
               </CardHeader>
               <CardContent>
                 {isLoading ? (
                   <div className="h-[300px] flex items-center justify-center">
-                    <Skeleton className="h-[280px] w-full rounded-md" />
+                    <Skeleton className="h-[280px] w-full rounded-md bg-secondary/20" />
                   </div>
                 ) : (
                   <PaymentMethodChart
@@ -508,34 +514,34 @@ export default function DashboardPage() {
 
           {/* Tables */}
           <div className="grid gap-4 grid-cols-1 lg:grid-cols-7">
-            <Card className="col-span-full lg:col-span-4">
+            <Card className="col-span-full lg:col-span-4 border-secondary-2/30 bg-white">
               <CardHeader>
                 <div className="flex items-center">
-                  <CardTitle>Recent Transactions</CardTitle>
+                  <CardTitle className="font-heading text-content">Recent Transactions</CardTitle>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Info className="h-4 w-4 ml-2 text-muted-foreground cursor-help" />
+                      <Info className="h-4 w-4 ml-2 text-secondary cursor-help" />
                     </TooltipTrigger>
                     <TooltipContent>Most recent ticket sales across all routes</TooltipContent>
                   </Tooltip>
                 </div>
-                <CardDescription>Latest ticket sales across all routes</CardDescription>
+                <CardDescription className="text-secondary">Latest ticket sales across all routes</CardDescription>
               </CardHeader>
               <CardContent>
                 {isLoading ? (
-                  <div className="rounded-md border">
-                    <div className="h-10 border-b bg-muted/50 px-4 flex items-center">
-                      <Skeleton className="h-4 w-full max-w-[500px]" />
+                  <div className="rounded-md border border-secondary-2/30">
+                    <div className="h-10 border-b bg-secondary-2/10 px-4 flex items-center">
+                      <Skeleton className="h-4 w-full bg-secondary/20" />
                     </div>
                     {Array(5)
                       .fill(0)
                       .map((_, i) => (
                         <div key={i} className="p-4 border-b last:border-0 flex flex-col gap-2">
                           <div className="flex justify-between">
-                            <Skeleton className="h-4 w-[120px]" />
-                            <Skeleton className="h-4 w-[80px]" />
+                            <Skeleton className="h-4 w-[120px] bg-secondary/20" />
+                            <Skeleton className="h-4 w-[80px] bg-secondary/20" />
                           </div>
-                          <Skeleton className="h-4 w-[200px]" />
+                          <Skeleton className="h-4 w-[200px] bg-secondary/20" />
                         </div>
                       ))}
                   </div>
@@ -545,31 +551,31 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
 
-            <Card className="col-span-full lg:col-span-3">
+            <Card className="col-span-full lg:col-span-3 border-secondary-2/30 bg-white">
               <CardHeader>
                 <div className="flex items-center">
-                  <CardTitle>Top Routes</CardTitle>
+                  <CardTitle className="font-heading text-content">Top Routes</CardTitle>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Info className="h-4 w-4 ml-2 text-muted-foreground cursor-help" />
+                      <Info className="h-4 w-4 ml-2 text-secondary cursor-help" />
                     </TooltipTrigger>
                     <TooltipContent>Most popular routes ranked by number of tickets sold</TooltipContent>
                   </Tooltip>
                 </div>
-                <CardDescription>Most popular routes by ticket sales</CardDescription>
+                <CardDescription className="text-secondary">Most popular routes by ticket sales</CardDescription>
               </CardHeader>
               <CardContent>
                 {isLoading ? (
-                  <div className="rounded-md border">
-                    <div className="h-10 border-b bg-muted/50 px-4 flex items-center">
-                      <Skeleton className="h-4 w-full max-w-[300px]" />
+                  <div className="rounded-md border border-secondary-2/30">
+                    <div className="h-10 border-b bg-secondary-2/10 px-4 flex items-center">
+                      <Skeleton className="h-4 w-full bg-secondary/20" />
                     </div>
                     {Array(5)
                       .fill(0)
                       .map((_, i) => (
                         <div key={i} className="p-4 border-b last:border-0 flex justify-between items-center">
-                          <Skeleton className="h-4 w-[180px]" />
-                          <Skeleton className="h-4 w-[40px]" />
+                          <Skeleton className="h-4 w-[180px] bg-secondary/20" />
+                          <Skeleton className="h-4 w-[40px] bg-secondary/20" />
                         </div>
                       ))}
                   </div>

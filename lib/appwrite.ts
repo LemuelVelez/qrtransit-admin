@@ -105,6 +105,7 @@ export async function getCurrentSession() {
     // This will throw an error if there's no active session
     const session = await account.getSession("current")
     return session
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   } catch (error) {
     // If there's an error, it means there's no active session
     return null

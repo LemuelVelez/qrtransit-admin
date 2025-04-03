@@ -43,10 +43,15 @@ export default function Layout({
 
   if (isLoading) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
+      <div
+        className="flex h-screen w-full items-center justify-center"
+        style={{ backgroundColor: "var(--color-body)" }}
+      >
         <div className="flex flex-col items-center gap-2">
-          <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
-          <p className="text-sm text-muted-foreground">Loading...</p>
+          <Loader2 className="h-8 w-8 animate-spin" style={{ color: "var(--color-primary)" }} />
+          <p className="text-sm tagline-fade" style={{ color: "var(--color-content)" }}>
+            Loading...
+          </p>
         </div>
       </div>
     )

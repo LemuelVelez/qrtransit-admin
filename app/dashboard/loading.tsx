@@ -17,20 +17,36 @@ export default function Loading() {
                     {Array(4)
                         .fill(0)
                         .map((_, i) => (
-                            <Skeleton key={i} className="h-[120px] w-full rounded-lg animate-pulse-emerald" />
+                            <Skeleton
+                                key={i}
+                                className="h-[120px] w-full rounded-lg animate-pulse"
+                                style={{ backgroundColor: "var(--color-primary-dark)", opacity: 0.2 }}
+                            />
                         ))}
                 </div>
 
                 {/* Charts */}
                 <div className="grid gap-4 grid-cols-1 lg:grid-cols-7">
-                    <Skeleton className="col-span-full lg:col-span-4 h-[400px] rounded-lg animate-pulse-emerald" />
-                    <Skeleton className="col-span-full lg:col-span-3 h-[400px] rounded-lg animate-pulse-emerald" />
+                    <Skeleton
+                        className="col-span-full lg:col-span-4 h-[400px] rounded-lg"
+                        style={{ backgroundColor: "var(--color-primary)", opacity: 0.15 }}
+                    />
+                    <Skeleton
+                        className="col-span-full lg:col-span-3 h-[400px] rounded-lg"
+                        style={{ backgroundColor: "var(--color-accent)", opacity: 0.15 }}
+                    />
                 </div>
 
                 {/* Tables */}
                 <div className="grid gap-4 grid-cols-1 lg:grid-cols-7">
-                    <Skeleton className="col-span-full lg:col-span-4 h-[400px] rounded-lg animate-pulse-emerald" />
-                    <Skeleton className="col-span-full lg:col-span-3 h-[400px] rounded-lg animate-pulse-emerald" />
+                    <Skeleton
+                        className="col-span-full lg:col-span-4 h-[400px] rounded-lg"
+                        style={{ backgroundColor: "var(--color-secondary)", opacity: 0.2 }}
+                    />
+                    <Skeleton
+                        className="col-span-full lg:col-span-3 h-[400px] rounded-lg"
+                        style={{ backgroundColor: "var(--color-secondary-2)", opacity: 0.2 }}
+                    />
                 </div>
             </div>
         </div>
