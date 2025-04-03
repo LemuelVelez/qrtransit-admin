@@ -1,15 +1,16 @@
 @import "tailwindcss";
 
 @theme {
-  /* Colors */
-  --color-primary-dark: #1c2431;
-  --color-primary: #223366;
-  --color-secondary: #828db0;
-  --color-secondary-2: #d1ccc1;
-  --color-accent: #9c6a40;
-  --color-muted: #30253e;
-  --color-content: #322416;
-  --color-body: #fffaf5;
+    /* Colors */
+    --color-primary-dark: #064e3b; /* Emerald 900 - keeping as primary */
+    --color-primary: #059669; /* Emerald 600 - keeping as primary */
+    --color-secondary: #9333ea; /* Purple 600 - complementary */
+    --color-secondary-2: #c084fc; /* Purple 400 - lighter complementary */
+    --color-accent: #d97706; /* Amber 600 - contrasting accent */
+    --color-muted: #1e40af; /* Blue 800 - deep supporting color */
+    --color-content: #3b82f6; /* Blue 500 - medium supporting color */
+    --color-body: #f8fafc; /* Slate 50 - neutral background */
+  
 
   /* Breakpoints */
   --breakpoint-3xl: 120rem;
@@ -18,24 +19,24 @@
   --font-heading: "Merriweather", serif;
   --font-body: "Source Sans Pro", sans-serif;
 
-  /* Light mode variables (default) */
+  /* Light mode variables (default) - Emerald theme */
   --background: 0 0% 100%;
   --foreground: 240 10% 3.9%;
   --card: 0 0% 100%;
   --card-foreground: 240 10% 3.9%;
-  --primary: 142.1 76.2% 36.3%;
+  --primary: 160 84% 39%; /* Emerald 600 */
   --primary-foreground: 355.7 100% 97.3%;
   --secondary: 240 4.8% 95.9%;
   --secondary-foreground: 240 5.9% 10%;
   --muted: 240 4.8% 95.9%;
   --muted-foreground: 240 3.8% 46.1%;
-  --accent: 240 4.8% 95.9%;
-  --accent-foreground: 240 5.9% 10%;
+  --accent: 160 84% 95%; /* Light emerald accent */
+  --accent-foreground: 160 84% 25%;
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 0 0% 98%;
   --border: 240 5.9% 90%;
   --input: 240 5.9% 90%;
-  --ring: 142.1 76.2% 36.3%;
+  --ring: 160 84% 39%; /* Emerald 600 */
   --popover: 0 0% 100%;
   --popover-foreground: 240 10% 3.9%;
   --radius: 0.5rem;
@@ -54,24 +55,24 @@
 
 @layer base {
   .dark {
-    --background: 20 14.3% 4.1%;
+    --background: 158 42% 5%; /* Dark emerald background */
     --foreground: 0 0% 95%;
-    --card: 24 9.8% 10%;
+    --card: 160 30% 8%; /* Dark emerald card */
     --card-foreground: 0 0% 95%;
-    --primary: 142.1 70.6% 45.3%;
-    --primary-foreground: 144.9 80.4% 10%;
-    --secondary: 240 3.7% 15.9%;
+    --primary: 160 84% 39%; /* Emerald 600 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 160 30% 15%; /* Dark emerald secondary */
     --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
+    --muted: 160 25% 12%; /* Dark emerald muted */
     --muted-foreground: 240 5% 64.9%;
-    --accent: 240 3.7% 15.9%;
+    --accent: 160 30% 20%; /* Dark emerald accent */
     --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 85.7% 97.3%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 142.4 71.8% 29.2%;
-    --popover: 20 14.3% 4.1%;
+    --border: 160 30% 15%; /* Dark emerald border */
+    --input: 160 30% 15%; /* Dark emerald input */
+    --ring: 160 84% 45%; /* Emerald 500 for better visibility in dark mode */
+    --popover: 158 42% 5%; /* Dark emerald popover */
     --popover-foreground: 0 0% 95%;
   }
 
@@ -142,4 +143,5 @@
 .tagline-fade:nth-child(3) {
   animation-delay: 1s;
 }
+
 

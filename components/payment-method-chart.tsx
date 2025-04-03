@@ -13,8 +13,11 @@ export function PaymentMethodChart({ qrRevenue, cashRevenue }: PaymentMethodChar
     { name: "Cash Payments", value: cashRevenue },
   ]
 
-  // Custom colors that are visually distinct
-  const COLORS = ["#0ea5e9", "#f97316"]
+  // Custom colors that match the emerald theme using CSS variables
+  const COLORS = [
+    getComputedStyle(document.documentElement).getPropertyValue("--color-primary").trim() || "#059669",
+    getComputedStyle(document.documentElement).getPropertyValue("--color-secondary").trim() || "#6ee7b7",
+  ]
 
   return (
     <ResponsiveContainer width="100%" height={300}>

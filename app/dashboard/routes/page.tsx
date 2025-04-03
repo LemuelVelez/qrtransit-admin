@@ -1,16 +1,18 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Search, Loader2 } from "lucide-react"
-import { ScrollArea } from "@/components/ui/scroll-area"
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { getAllRoutes, updateRouteStatus } from "@/lib/route-service"
-import { formatDate } from "@/lib/utils"
+import { formatDate, cn } from "@/lib/utils"
+
+// DataTable components
+import { type ColumnDef, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table"
 
 export default function RoutesPage() {
   const [routes, setRoutes] = useState<any[]>([])
@@ -72,6 +74,86 @@ export default function RoutesPage() {
     }
   }
 
+  // Define columns for DataTable
+  const columns = useMemo<ColumnDef<any>[]>(
+    () => [
+      {
+        accessorKey: "route",
+        header: "Route",
+        cell: ({ row }) => {
+          const route = row.original
+          const routeText = `${route.from} → ${route.to}`
+          return (
+            <div className="min-w-[150px] max-w-[250px]">
+              <ScrollArea className="h-[40px] w-full" type="always">
+                <div className="pr-4 font-medium">{routeText}</div>
+                <ScrollBar orientation="horizontal" />
+              </ScrollArea>
+            </div>
+          )
+        },
+      },
+      {
+        accessorKey: "busNumber",
+        header: "Bus #",
+        cell: ({ row }) => <div>{row.original.busNumber}</div>,
+      },
+      {
+        accessorKey: "conductorName",
+        header: "Conductor",
+        cell: ({ row }) => <div className="max-w-[120px] truncate">{row.original.conductorName || "Unknown"}</div>,
+      },
+      {
+        accessorKey: "timestamp",
+        header: "Created",
+        cell: ({ row }) => <div>{formatDate(row.original.timestamp)}</div>,
+      },
+      {
+        accessorKey: "status",
+        header: "Status",
+        cell: ({ row }) => (
+          <Badge
+            className={cn(
+              row.original.active
+                ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                : "bg-slate-700 hover:bg-slate-800 text-white",
+            )}
+          >
+            {row.original.active ? "Active" : "Inactive"}
+          </Badge>
+        ),
+      },
+      {
+        accessorKey: "active",
+        header: () => <div className="text-right">Active</div>,
+        cell: ({ row }) => (
+          <div className="text-right">
+            <Switch
+              checked={row.original.active}
+              disabled={updatingRouteId === row.original.id}
+              onCheckedChange={() => handleToggleRouteStatus(row.original.id, row.original.active)}
+              className={cn(
+                "data-[state=checked]:bg-emerald-600",
+                "data-[state=unchecked]:bg-slate-200",
+                "data-[state=checked]:border-emerald-700",
+                "transition-colors",
+              )}
+            />
+          </div>
+        ),
+      },
+    ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [updatingRouteId],
+  )
+
+  // Initialize the table
+  const table = useReactTable({
+    data: filteredRoutes,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+  })
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
@@ -101,52 +183,51 @@ export default function RoutesPage() {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : (
-            <div className="rounded-md border">
-              <ScrollArea className="w-full" orientation="horizontal">
-                <Table className="w-full">
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="min-w-[150px]">Route</TableHead>
-                      <TableHead className="min-w-[80px]">Bus #</TableHead>
-                      <TableHead className="min-w-[120px]">Conductor</TableHead>
-                      <TableHead className="min-w-[100px]">Created</TableHead>
-                      <TableHead className="min-w-[100px]">Status</TableHead>
-                      <TableHead className="min-w-[80px] text-right">Active</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredRoutes.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                          No routes found
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredRoutes.map((route) => (
-                        <TableRow key={route.id}>
-                          <TableCell className="font-medium truncate max-w-[150px]">
-                            {route.from} → {route.to}
-                          </TableCell>
-                          <TableCell>{route.busNumber}</TableCell>
-                          <TableCell className="truncate max-w-[120px]">{route.conductorName || "Unknown"}</TableCell>
-                          <TableCell>{formatDate(route.timestamp)}</TableCell>
-                          <TableCell>
-                            <Badge variant={route.active ? "default" : "secondary"}>
-                              {route.active ? "Active" : "Inactive"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Switch
-                              checked={route.active}
-                              disabled={updatingRouteId === route.id}
-                              onCheckedChange={() => handleToggleRouteStatus(route.id, route.active)}
-                            />
-                          </TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
+            <div className="rounded-md border overflow-hidden">
+              <ScrollArea className="h-[400px]">
+                <div className="min-w-[800px]">
+                  <table className="w-full caption-bottom text-sm">
+                    <thead className="[&_tr]:border-b sticky top-0 z-10 bg-slate-100 dark:bg-slate-800">
+                      {table.getHeaderGroups().map((headerGroup) => (
+                        <tr key={headerGroup.id} className="border-b transition-colors">
+                          {headerGroup.headers.map((header) => (
+                            <th
+                              key={header.id}
+                              className="h-12 px-4 text-left align-middle font-medium text-slate-700 dark:text-slate-300 [&:has([role=checkbox])]:pr-0"
+                            >
+                              {header.isPlaceholder
+                                ? null
+                                : flexRender(header.column.columnDef.header, header.getContext())}
+                            </th>
+                          ))}
+                        </tr>
+                      ))}
+                    </thead>
+                    <tbody className="[&_tr:last-child]:border-0">
+                      {table.getRowModel().rows?.length ? (
+                        table.getRowModel().rows.map((row) => (
+                          <tr
+                            key={row.id}
+                          
+                          >
+                            {row.getVisibleCells().map((cell) => (
+                              <td key={cell.id} className="p-4 align-middle [&:has([role=checkbox])]:pr-0">
+                                {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                              </td>
+                            ))}
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={columns.length} className="h-24 text-center">
+                            No routes found
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                <ScrollBar orientation="horizontal" />
               </ScrollArea>
             </div>
           )}

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
-import type React from "react"
+import React from "react"
 import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
 import { logoutUser } from "@/lib/appwrite"
@@ -25,7 +25,7 @@ import {
   SidebarFooter,
   SidebarMenu,
   SidebarMenuItem,
-  SidebarMenuButton,
+  type SidebarMenuButton,
   SidebarGroup,
   SidebarGroupLabel,
   SidebarGroupContent,
@@ -46,6 +46,7 @@ import {
   User,
 } from "lucide-react"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { cn } from "@/lib/utils"
 
 export function DashboardLayout({ children, user }: { children: React.ReactNode; user: any }) {
   const router = useRouter()
@@ -61,118 +62,138 @@ export function DashboardLayout({ children, user }: { children: React.ReactNode;
     }
   }
 
+  // Custom sidebar menu button with active background
+  const CustomSidebarMenuButton = React.forwardRef<
+    HTMLDivElement,
+    React.ComponentPropsWithoutRef<typeof SidebarMenuButton> & {
+      isActive?: boolean
+      href: string
+      icon: React.ElementType
+      label: string
+    }
+  >(({ isActive, href, icon: Icon, label, className, ...props }, ref) => {
+    return (
+      <SidebarMenuItem>
+        <Link
+          href={href}
+          className={cn(
+            "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors",
+            isActive
+              ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]"
+              : "text-[hsl(var(--foreground))] hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--accent-foreground))]",
+            className,
+          )}
+          ref={ref}
+          {...props}
+        >
+          <Icon className="h-4 w-4" />
+          <span>{label}</span>
+        </Link>
+      </SidebarMenuItem>
+    )
+  })
+
+  CustomSidebarMenuButton.displayName = "CustomSidebarMenuButton"
+
   return (
     <SidebarProvider defaultOpen={!isMobile}>
       <div className="flex w-full min-h-screen">
         <Sidebar>
-          <SidebarHeader className="bg-sidebar">
+          <SidebarHeader className="bg-[hsl(var(--background))]">
             <div className="flex items-center gap-2 px-4 py-2">
-              <QrCode className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
-              <span className="font-bold text-lg">QR Transit Admin</span>
+              <QrCode className="h-6 w-6 text-[hsl(var(--primary))]" />
+              <span className="font-bold text-lg text-[hsl(var(--foreground))]">QR Transit Admin</span>
             </div>
           </SidebarHeader>
           <SidebarSeparator />
-          <SidebarContent className="bg-sidebar">
+          <SidebarContent className="bg-[hsl(var(--background))]">
             <SidebarGroup>
-              <SidebarGroupLabel>Dashboard</SidebarGroupLabel>
+              <SidebarGroupLabel className="text-[hsl(var(--muted-foreground))]">Dashboard</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={pathname === "/dashboard"}>
-                      <Link href="/dashboard">
-                        <LayoutDashboard className="h-4 w-4" />
-                        <span>Overview</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={pathname === "/dashboard/analytics"}>
-                      <Link href="/dashboard/analytics">
-                        <BarChart3 className="h-4 w-4" />
-                        <span>Analytics</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={pathname === "/dashboard/reports"}>
-                      <Link href="/dashboard/reports">
-                        <FileText className="h-4 w-4" />
-                        <span>Reports</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
+                  <CustomSidebarMenuButton
+                    href="/dashboard"
+                    icon={LayoutDashboard}
+                    label="Overview"
+                    isActive={pathname === "/dashboard"}
+                  />
+                  <CustomSidebarMenuButton
+                    href="/dashboard/analytics"
+                    icon={BarChart3}
+                    label="Analytics"
+                    isActive={pathname === "/dashboard/analytics"}
+                  />
+                  <CustomSidebarMenuButton
+                    href="/dashboard/reports"
+                    icon={FileText}
+                    label="Reports"
+                    isActive={pathname === "/dashboard/reports"}
+                  />
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
             <SidebarSeparator />
             <SidebarGroup>
-              <SidebarGroupLabel>Management</SidebarGroupLabel>
+              <SidebarGroupLabel className="text-[hsl(var(--muted-foreground))]">Management</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={pathname === "/dashboard/users"}>
-                      <Link href="/dashboard/users">
-                        <Users className="h-4 w-4" />
-                        <span>Users</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={pathname === "/dashboard/routes"}>
-                      <Link href="/dashboard/routes">
-                        <Bus className="h-4 w-4" />
-                        <span>Routes</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={pathname === "/dashboard/transactions"}>
-                      <Link href="/dashboard/transactions">
-                        <CreditCard className="h-4 w-4" />
-                        <span>Transactions</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={pathname === "/dashboard/transaction-status"}>
-                      <Link href="/dashboard/transaction-status">
-                        <CreditCard className="h-4 w-4" />
-                        <span>Transaction Status</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
+                  <CustomSidebarMenuButton
+                    href="/dashboard/users"
+                    icon={Users}
+                    label="Users"
+                    isActive={pathname === "/dashboard/users"}
+                  />
+                  <CustomSidebarMenuButton
+                    href="/dashboard/routes"
+                    icon={Bus}
+                    label="Routes"
+                    isActive={pathname === "/dashboard/routes"}
+                  />
+                  <CustomSidebarMenuButton
+                    href="/dashboard/transactions"
+                    icon={CreditCard}
+                    label="Transactions"
+                    isActive={pathname === "/dashboard/transactions"}
+                  />
+                  <CustomSidebarMenuButton
+                    href="/dashboard/transaction-status"
+                    icon={CreditCard}
+                    label="Transaction Status"
+                    isActive={pathname === "/dashboard/transaction-status"}
+                  />
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
             <SidebarSeparator />
             <SidebarGroup>
-              <SidebarGroupLabel>Settings</SidebarGroupLabel>
+              <SidebarGroupLabel className="text-[hsl(var(--muted-foreground))]">Settings</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={pathname === "/dashboard/settings"}>
-                      <Link href="/dashboard/settings">
-                        <Settings className="h-4 w-4" />
-                        <span>Settings</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
+                  <CustomSidebarMenuButton
+                    href="/dashboard/settings"
+                    icon={Settings}
+                    label="Settings"
+                    isActive={pathname === "/dashboard/settings"}
+                  />
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
           </SidebarContent>
-          <SidebarFooter className="bg-sidebar">
+          <SidebarFooter className="bg-[hsl(var(--background))]">
             <div className="px-3 py-2">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="w-full justify-start px-2">
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-start px-2 hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--accent-foreground))]"
+                  >
                     <Avatar className="h-6 w-6 mr-2">
                       <AvatarImage src={user?.avatar} alt={user?.name || "User"} />
-                      <AvatarFallback className="bg-emerald-100 text-emerald-800 dark:bg-emerald-800 dark:text-emerald-100">
+                      <AvatarFallback className="bg-[hsl(var(--secondary))] text-[hsl(var(--secondary-foreground))]">
                         {getInitials(`${user?.firstname || ""} ${user?.lastname || ""}`)}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="truncate">
+                    <span className="truncate text-[hsl(var(--foreground))]">
                       {user?.firstname && user?.lastname
                         ? `${user.firstname} ${user.lastname}`
                         : user?.username || "Admin User"}
@@ -211,7 +232,7 @@ export function DashboardLayout({ children, user }: { children: React.ReactNode;
                     <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                       <Avatar className="h-8 w-8">
                         <AvatarImage src={user?.avatar} alt={user?.name || "User"} />
-                        <AvatarFallback className="bg-emerald-100 text-emerald-800 dark:bg-emerald-800 dark:text-emerald-100">
+                        <AvatarFallback className="bg-[hsl(var(--secondary))] text-[hsl(var(--secondary-foreground))]">
                           {getInitials(`${user?.firstname || ""} ${user?.lastname || ""}`)}
                         </AvatarFallback>
                       </Avatar>

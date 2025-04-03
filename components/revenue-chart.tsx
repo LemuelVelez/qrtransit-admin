@@ -40,7 +40,7 @@ export function RevenueChart({ data }: RevenueChartProps) {
           }}
           itemStyle={{ color: "hsl(var(--foreground))" }}
         />
-        <Bar dataKey="total" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   )

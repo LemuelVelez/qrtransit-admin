@@ -13,14 +13,14 @@ export function TransactionDetails({ transaction }: TransactionDetailsProps) {
     switch (status) {
       case "COMPLETED":
         return (
-          <Badge className="bg-emerald-500 hover:bg-emerald-600">
+          <Badge className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:bg-[hsl(var(--primary))]/90">
             <CheckCircle className="mr-1 h-3 w-3" />
             Completed
           </Badge>
         )
       case "PENDING":
         return (
-          <Badge variant="outline" className="text-amber-500 border-amber-500">
+          <Badge variant="outline" className="text-[hsl(var(--accent-foreground))] border-[hsl(var(--accent))]">
             <Clock className="mr-1 h-3 w-3" />
             Pending
           </Badge>

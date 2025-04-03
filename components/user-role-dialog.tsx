@@ -92,7 +92,11 @@ export function UserRoleDialog({ user, open, onOpenChange, onRoleChange, isUpdat
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={isUpdating} className="w-full sm:w-auto">
+              <Button
+                type="submit"
+                disabled={isUpdating}
+                className="w-full sm:w-auto bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 text-[hsl(var(--primary-foreground))]"
+              >
                 {isUpdating ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -118,7 +122,10 @@ export function UserRoleDialog({ user, open, onOpenChange, onRoleChange, isUpdat
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmRoleChange} className="bg-emerald-600 hover:bg-emerald-700">
+            <AlertDialogAction
+              onClick={confirmRoleChange}
+              className="bg-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))]/90 text-[hsl(var(--primary-foreground))]"
+            >
               Confirm
             </AlertDialogAction>
           </AlertDialogFooter>

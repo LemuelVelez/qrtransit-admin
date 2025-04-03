@@ -33,12 +33,15 @@ export function TopRoutesTable({ routes }: TopRoutesTableProps) {
               <TableRow key={index}>
                 <TableCell>
                   <div className="flex items-center">
-                    <MapPin className="mr-2 h-4 w-4 text-sky-500" />
+                    <MapPin className="mr-2 h-4 w-4 text-[hsl(var(--primary))]" />
                     <span>{route.route}</span>
                   </div>
                 </TableCell>
                 <TableCell className="text-right">
-                  <Badge variant="outline" className="bg-sky-50 text-sky-700 hover:bg-sky-100 border-sky-200">
+                  <Badge
+                    variant="outline"
+                    className="bg-[hsl(var(--secondary))]/20 text-[hsl(var(--secondary-foreground))] hover:bg-[hsl(var(--secondary))]/30 border-[hsl(var(--secondary))]"
+                  >
                     {route.count}
                   </Badge>
                 </TableCell>

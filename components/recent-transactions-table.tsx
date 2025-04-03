@@ -32,7 +32,7 @@ export function RecentTransactionsTable() {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center py-8">
-        <Loader2 className="h-6 w-6 animate-spin text-sky-500" />
+        <Loader2 className="h-6 w-6 animate-spin text-[hsl(var(--primary))]" />
       </div>
     )
   }
@@ -66,14 +66,17 @@ export function RecentTransactionsTable() {
                 </TableCell>
                 <TableCell>
                   {transaction.paymentMethod === "QR" ? (
-                    <Badge variant="default" className="bg-sky-500 hover:bg-sky-600">
+                    <Badge
+                      variant="default"
+                      className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:bg-[hsl(var(--primary))]/90"
+                    >
                       <QrCode className="mr-1 h-3 w-3" />
                       {transaction.paymentMethod}
                     </Badge>
                   ) : (
                     <Badge
                       variant="outline"
-                      className="border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100"
+                      className="border-[hsl(var(--secondary))] bg-[hsl(var(--secondary))]/20 text-[hsl(var(--secondary-foreground))] hover:bg-[hsl(var(--secondary))]/30"
                     >
                       <Banknote className="mr-1 h-3 w-3" />
                       {transaction.paymentMethod}

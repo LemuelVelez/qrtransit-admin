@@ -18,6 +18,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { getInitials } from "@/lib/utils"
 import { Menu, User, LogOut, LayoutDashboard, Users, Bus, CreditCard, Settings, BarChart3 } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 interface HeaderProps {
   user: any
@@ -76,9 +77,9 @@ export function DashboardHeader({ user, onLogout }: HeaderProps) {
             <span className="sr-only">Toggle navigation menu</span>
           </Button>
         </SheetTrigger>
-        <SheetContent side="left" className="w-64 sm:max-w-sm">
+        <SheetContent side="left" className="w-64 sm:max-w-sm bg-[hsl(var(--background))]">
           <SheetHeader>
-            <SheetTitle>Navigation</SheetTitle>
+            <SheetTitle className="text-[hsl(var(--foreground))]">Navigation</SheetTitle>
           </SheetHeader>
           <nav className="grid gap-2 py-6">
             {routes.map((route) => (
@@ -87,8 +88,10 @@ export function DashboardHeader({ user, onLogout }: HeaderProps) {
                 href={route.href}
                 onClick={() => setOpen(false)}
                 className={cn(
-                  "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:text-primary",
-                  route.active ? "bg-primary/10 text-primary" : "text-muted-foreground",
+                  "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all",
+                  route.active
+                    ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]"
+                    : "text-[hsl(var(--foreground))] hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--accent-foreground))]",
                 )}
               >
                 <route.icon className="h-4 w-4" />
@@ -105,7 +108,9 @@ export function DashboardHeader({ user, onLogout }: HeaderProps) {
           <Button variant="ghost" size="icon" className="relative h-8 w-8 rounded-full">
             <Avatar className="h-8 w-8">
               <AvatarImage src={user?.avatar} alt={user?.name || "User"} />
-              <AvatarFallback>{getInitials(`${user?.firstname || ""} ${user?.lastname || ""}`)}</AvatarFallback>
+              <AvatarFallback className="bg-[hsl(var(--secondary))] text-[hsl(var(--secondary-foreground))]">
+                {getInitials(`${user?.firstname || ""} ${user?.lastname || ""}`)}
+              </AvatarFallback>
             </Avatar>
           </Button>
         </DropdownMenuTrigger>
@@ -131,9 +136,5 @@ export function DashboardHeader({ user, onLogout }: HeaderProps) {
       </DropdownMenu>
     </header>
   )
-}
-
-function cn(...inputs: any[]) {
-  return inputs.filter(Boolean).join(" ")
 }
 
