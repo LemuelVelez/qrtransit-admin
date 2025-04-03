@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { DatePickerWithRange } from "@/components/date-picker-with-range"
 import type { DateRange } from "react-day-picker"
 import { subDays } from "date-fns"
@@ -130,52 +131,56 @@ export default function TransactionsPage() {
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           ) : (
-            <div className="rounded-md border overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Passenger</TableHead>
-                    <TableHead>Route</TableHead>
-                    <TableHead>Bus #</TableHead>
-                    <TableHead>Payment</TableHead>
-                    <TableHead className="text-right">Fare</TableHead>
-                    <TableHead className="hidden md:table-cell">Transaction ID</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredTrips.length === 0 ? (
+            <div className="rounded-md border">
+              <ScrollArea className="w-full" orientation="horizontal">
+                <Table className="w-full">
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                        No transactions found
-                      </TableCell>
+                      <TableHead className="min-w-[100px]">Date</TableHead>
+                      <TableHead className="min-w-[120px]">Passenger</TableHead>
+                      <TableHead className="min-w-[150px]">Route</TableHead>
+                      <TableHead className="min-w-[80px]">Bus #</TableHead>
+                      <TableHead className="min-w-[100px]">Payment</TableHead>
+                      <TableHead className="min-w-[80px] text-right">Fare</TableHead>
+                      <TableHead className="min-w-[180px] hidden md:table-cell">Transaction ID</TableHead>
                     </TableRow>
-                  ) : (
-                    filteredTrips.map((trip) => (
-                      <TableRow key={trip.id}>
-                        <TableCell className="whitespace-nowrap">{formatDate(trip.timestamp)}</TableCell>
-                        <TableCell className="font-medium">{trip.passengerName}</TableCell>
-                        <TableCell className="whitespace-nowrap">
-                          {trip.from} → {trip.to}
+                  </TableHeader>
+                  <TableBody>
+                    {filteredTrips.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                          No transactions found
                         </TableCell>
-                        <TableCell>{trip.busNumber || "N/A"}</TableCell>
-                        <TableCell>
-                          <Badge variant={trip.paymentMethod === "QR" ? "default" : "outline"}>
-                            {trip.paymentMethod === "QR" ? (
-                              <QrCode className="mr-1 h-3 w-3" />
-                            ) : (
-                              <Banknote className="mr-1 h-3 w-3" />
-                            )}
-                            {trip.paymentMethod}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right font-medium">{trip.fare}</TableCell>
-                        <TableCell className="font-mono text-xs hidden md:table-cell">{trip.transactionId}</TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                    ) : (
+                      filteredTrips.map((trip) => (
+                        <TableRow key={trip.id}>
+                          <TableCell>{formatDate(trip.timestamp)}</TableCell>
+                          <TableCell className="font-medium truncate max-w-[120px]">{trip.passengerName}</TableCell>
+                          <TableCell className="truncate max-w-[150px]">
+                            {trip.from} → {trip.to}
+                          </TableCell>
+                          <TableCell>{trip.busNumber || "N/A"}</TableCell>
+                          <TableCell>
+                            <Badge variant={trip.paymentMethod === "QR" ? "default" : "outline"}>
+                              {trip.paymentMethod === "QR" ? (
+                                <QrCode className="mr-1 h-3 w-3" />
+                              ) : (
+                                <Banknote className="mr-1 h-3 w-3" />
+                              )}
+                              {trip.paymentMethod}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right font-medium">{trip.fare}</TableCell>
+                          <TableCell className="font-mono text-xs truncate max-w-[180px] hidden md:table-cell">
+                            {trip.transactionId}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
             </div>
           )}
         </CardContent>

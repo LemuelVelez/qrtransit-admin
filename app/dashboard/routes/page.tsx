@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Switch } from "@/components/ui/switch"
 import { Search, Loader2 } from "lucide-react"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { getAllRoutes, updateRouteStatus } from "@/lib/route-service"
 import { formatDate } from "@/lib/utils"
 
@@ -101,50 +102,52 @@ export default function RoutesPage() {
             </div>
           ) : (
             <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Route</TableHead>
-                    <TableHead>Bus #</TableHead>
-                    <TableHead>Conductor</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Active</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredRoutes.length === 0 ? (
+              <ScrollArea className="w-full" orientation="horizontal">
+                <Table className="w-full">
+                  <TableHeader>
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                        No routes found
-                      </TableCell>
+                      <TableHead className="min-w-[150px]">Route</TableHead>
+                      <TableHead className="min-w-[80px]">Bus #</TableHead>
+                      <TableHead className="min-w-[120px]">Conductor</TableHead>
+                      <TableHead className="min-w-[100px]">Created</TableHead>
+                      <TableHead className="min-w-[100px]">Status</TableHead>
+                      <TableHead className="min-w-[80px] text-right">Active</TableHead>
                     </TableRow>
-                  ) : (
-                    filteredRoutes.map((route) => (
-                      <TableRow key={route.id}>
-                        <TableCell className="font-medium">
-                          {route.from} → {route.to}
-                        </TableCell>
-                        <TableCell>{route.busNumber}</TableCell>
-                        <TableCell>{route.conductorName || "Unknown"}</TableCell>
-                        <TableCell>{formatDate(route.timestamp)}</TableCell>
-                        <TableCell>
-                          <Badge variant={route.active ? "default" : "secondary"}>
-                            {route.active ? "Active" : "Inactive"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Switch
-                            checked={route.active}
-                            disabled={updatingRouteId === route.id}
-                            onCheckedChange={() => handleToggleRouteStatus(route.id, route.active)}
-                          />
+                  </TableHeader>
+                  <TableBody>
+                    {filteredRoutes.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                          No routes found
                         </TableCell>
                       </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                    ) : (
+                      filteredRoutes.map((route) => (
+                        <TableRow key={route.id}>
+                          <TableCell className="font-medium truncate max-w-[150px]">
+                            {route.from} → {route.to}
+                          </TableCell>
+                          <TableCell>{route.busNumber}</TableCell>
+                          <TableCell className="truncate max-w-[120px]">{route.conductorName || "Unknown"}</TableCell>
+                          <TableCell>{formatDate(route.timestamp)}</TableCell>
+                          <TableCell>
+                            <Badge variant={route.active ? "default" : "secondary"}>
+                              {route.active ? "Active" : "Inactive"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Switch
+                              checked={route.active}
+                              disabled={updatingRouteId === route.id}
+                              onCheckedChange={() => handleToggleRouteStatus(route.id, route.active)}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </ScrollArea>
             </div>
           )}
         </CardContent>
