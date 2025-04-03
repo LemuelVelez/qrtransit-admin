@@ -37,14 +37,14 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-emerald-600 to-emerald-800 p-4">
-      <Card className="w-full max-w-md shadow-lg border-0">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#223366] to-[#1c2431] p-4">
+      <Card className="w-full max-w-md shadow-lg border-0 bg-[#fffaf5]">
         <CardHeader className="space-y-1 flex flex-col items-center">
           <div className="w-16 h-16 relative mb-2">
             <Image src="/QRTransit.png" alt="QR Transit Logo" fill className="object-contain" />
           </div>
-          <CardTitle className="text-2xl font-bold text-center">Forgot Password</CardTitle>
-          <CardDescription className="text-center">
+          <CardTitle className="text-2xl font-bold text-center text-[#223366]">Forgot Password</CardTitle>
+          <CardDescription className="text-center text-[#828db0]">
             Enter your email address and we&apos;ll send you a link to reset your password
           </CardDescription>
         </CardHeader>
@@ -55,7 +55,7 @@ export default function ForgotPasswordPage() {
             </Alert>
           )}
           {success && (
-            <Alert className="mb-4 bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-900/50 dark:text-emerald-200 dark:border-emerald-800">
+            <Alert className="mb-4 bg-[#223366]/10 text-[#223366] border-[#223366]/20">
               <AlertDescription>
                 Password reset email sent! Please check your inbox and follow the instructions.
               </AlertDescription>
@@ -63,7 +63,9 @@ export default function ForgotPasswordPage() {
           )}
           <form onSubmit={handleResetPassword} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email" className="text-[#322416]">
+                Email
+              </Label>
               <Input
                 id="email"
                 type="email"
@@ -72,12 +74,12 @@ export default function ForgotPasswordPage() {
                 placeholder="Enter your email address"
                 required
                 disabled={isLoading || success}
-                className="bg-white/90 dark:bg-gray-800/90"
+                className="bg-white/90 border-[#d1ccc1] text-[#322416]"
               />
             </div>
             <Button
               type="submit"
-              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+              className="w-full bg-[#223366] hover:bg-[#1c2431] text-white"
               disabled={isLoading || success}
             >
               {isLoading ? (
@@ -92,10 +94,7 @@ export default function ForgotPasswordPage() {
           </form>
         </CardContent>
         <CardFooter className="flex justify-center">
-          <Link
-            href="/login"
-            className="text-sm text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
-          >
+          <Link href="/login" className="text-sm text-[#9c6a40] hover:text-[#223366]">
             Back to Login
           </Link>
         </CardFooter>

@@ -3,11 +3,11 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
-import { loginUser } from "@/lib/appwrite"
+import { loginUser, getCurrentUser } from "@/lib/appwrite"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -21,7 +21,46 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true)
   const router = useRouter()
+
+  // Check for active session on component mount
+  useEffect(() => {
+    let isMounted = true
+
+    const checkSession = async () => {
+      try {
+        const user = await getCurrentUser()
+
+        // Only proceed if the component is still mounted
+        if (!isMounted) return
+
+        if (user) {
+          // If user is admin, redirect to dashboard
+          if (user.role === "admin") {
+            router.push("/dashboard")
+          } else {
+            // For non-admin users, redirect to home
+            router.push("/")
+          }
+        }
+      } catch (err) {
+        // If there's an error checking the session, we'll just continue with the login page
+        console.error("Session check error:", err)
+      } finally {
+        if (isMounted) {
+          setIsCheckingAuth(false)
+        }
+      }
+    }
+
+    checkSession()
+
+    // Cleanup function to prevent state updates after unmount
+    return () => {
+      isMounted = false
+    }
+  }, [router])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -33,8 +72,11 @@ export default function LoginPage() {
 
       if (user && user.role === "admin") {
         router.push("/dashboard")
+      } else if (user) {
+        // For non-admin users, redirect to home
+        router.push("/")
       } else {
-        setError("Access denied. Only admin users can access this dashboard.")
+        setError("Login failed. Please check your credentials.")
       }
     } catch (err: any) {
       setError(err.message || "Login failed. Please check your credentials.")
@@ -47,15 +89,27 @@ export default function LoginPage() {
     setShowPassword(!showPassword)
   }
 
+  // Show loading state while checking authentication
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#223366] p-4">
+        <div className="text-white flex flex-col items-center">
+          <Loader2 className="h-8 w-8 animate-spin mb-2" />
+          <p>Checking authentication...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-emerald-600 to-emerald-800 p-4">
-      <Card className="w-full bg-gray-500 max-w-md shadow-lg border-0">
+    <div className="min-h-screen flex items-center justify-center bg-[#223366] p-4">
+      <Card className="w-full max-w-md shadow-lg border-0 bg-[#fffaf5]">
         <CardHeader className="space-y-1 flex flex-col items-center">
           <div className="w-16 h-16 relative mb-2">
             <Image src="/QRTransit.png" alt="QR Transit Logo" fill className="object-contain" />
           </div>
-          <CardTitle className="text-2xl font-bold text-center">Admin Login</CardTitle>
-          <CardDescription className="text-center">
+          <CardTitle className="text-2xl font-bold text-center text-[#223366]">Admin Login</CardTitle>
+          <CardDescription className="text-center text-[#828db0]">
             Enter your credentials to access the admin dashboard
           </CardDescription>
         </CardHeader>
@@ -67,7 +121,9 @@ export default function LoginPage() {
           )}
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="username" className="text-[#322416]">
+                Username
+              </Label>
               <Input
                 id="username"
                 type="text"
@@ -76,16 +132,15 @@ export default function LoginPage() {
                 placeholder="Enter your username"
                 required
                 disabled={isLoading}
-                className="bg-white/90 dark:bg-gray-800/90"
+                className="bg-white/90 border-[#d1ccc1] focus:border-[#9c6a40] focus:ring-[#9c6a40]"
               />
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
-                <Link
-                  href="/forgot-password"
-                  className="text-sm text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
-                >
+                <Label htmlFor="password" className="text-[#322416]">
+                  Password
+                </Label>
+                <Link href="/forgot-password" className="text-sm text-[#9c6a40] hover:text-[#223366]">
                   Forgot password?
                 </Link>
               </div>
@@ -98,13 +153,13 @@ export default function LoginPage() {
                   placeholder="Enter your password"
                   required
                   disabled={isLoading}
-                  className="pr-10 bg-white/90 dark:bg-gray-800/90"
+                  className="pr-10 bg-white/90 border-[#d1ccc1] focus:border-[#9c6a40] focus:ring-[#9c6a40]"
                 />
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="absolute right-0 top-0 h-full px-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                  className="absolute right-0 top-0 h-full px-3 text-[#828db0] hover:text-[#223366]"
                   onClick={togglePasswordVisibility}
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -112,11 +167,7 @@ export default function LoginPage() {
                 </Button>
               </div>
             </div>
-            <Button
-              type="submit"
-              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
-              disabled={isLoading}
-            >
+            <Button type="submit" className="w-full bg-[#9c6a40] hover:bg-[#223366] text-white" disabled={isLoading}>
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -129,7 +180,7 @@ export default function LoginPage() {
           </form>
         </CardContent>
         <CardFooter className="flex justify-center">
-          <p className="text-sm text-center text-muted-foreground">QR-Coded Bus Ticketing System Admin Portal</p>
+          <p className="text-sm text-center text-[#828db0]">QR-Coded Bus Ticketing System Admin Portal</p>
         </CardFooter>
       </Card>
     </div>

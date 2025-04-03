@@ -75,14 +75,16 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-emerald-600 to-emerald-800 p-4">
-      <Card className="w-full max-w-md shadow-lg border-0">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#223366] to-[#1c2431] p-4">
+      <Card className="w-full max-w-md shadow-lg border-0 bg-[#fffaf5]">
         <CardHeader className="space-y-1 flex flex-col items-center">
           <div className="w-16 h-16 relative mb-2">
             <Image src="/QRTransit.png" alt="QR Transit Logo" fill className="object-contain" />
           </div>
-          <CardTitle className="text-2xl font-bold text-center">Reset Password</CardTitle>
-          <CardDescription className="text-center">Create a new password for your account</CardDescription>
+          <CardTitle className="text-2xl font-bold text-center text-[#223366]">Reset Password</CardTitle>
+          <CardDescription className="text-center text-[#828db0]">
+            Create a new password for your account
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {error && (
@@ -91,13 +93,15 @@ export default function ResetPasswordPage() {
             </Alert>
           )}
           {success && (
-            <Alert className="mb-4 bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-900/50 dark:text-emerald-200 dark:border-emerald-800">
+            <Alert className="mb-4 bg-[#223366]/10 text-[#223366] border-[#223366]/20">
               <AlertDescription>Password reset successful! Redirecting to login page...</AlertDescription>
             </Alert>
           )}
           <form onSubmit={handleResetPassword} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="password">New Password</Label>
+              <Label htmlFor="password" className="text-[#322416]">
+                New Password
+              </Label>
               <div className="relative">
                 <Input
                   id="password"
@@ -107,13 +111,13 @@ export default function ResetPasswordPage() {
                   placeholder="Enter your new password"
                   required
                   disabled={isLoading || success || !userId || !secret}
-                  className="pr-10 bg-white/90 dark:bg-gray-800/90"
+                  className="pr-10 bg-white/90 border-[#d1ccc1] text-[#322416]"
                 />
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="absolute right-0 top-0 h-full px-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                  className="absolute right-0 top-0 h-full px-3 text-[#828db0] hover:text-[#223366]"
                   onClick={togglePasswordVisibility}
                   disabled={isLoading || success || !userId || !secret}
                 >
@@ -123,7 +127,9 @@ export default function ResetPasswordPage() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Label htmlFor="confirmPassword" className="text-[#322416]">
+                Confirm Password
+              </Label>
               <div className="relative">
                 <Input
                   id="confirmPassword"
@@ -133,13 +139,13 @@ export default function ResetPasswordPage() {
                   placeholder="Confirm your new password"
                   required
                   disabled={isLoading || success || !userId || !secret}
-                  className="pr-10 bg-white/90 dark:bg-gray-800/90"
+                  className="pr-10 bg-white/90 border-[#d1ccc1] text-[#322416]"
                 />
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="absolute right-0 top-0 h-full px-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                  className="absolute right-0 top-0 h-full px-3 text-[#828db0] hover:text-[#223366]"
                   onClick={toggleConfirmPasswordVisibility}
                   disabled={isLoading || success || !userId || !secret}
                 >
@@ -150,7 +156,7 @@ export default function ResetPasswordPage() {
             </div>
             <Button
               type="submit"
-              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+              className="w-full bg-[#223366] hover:bg-[#1c2431] text-white"
               disabled={isLoading || success || !userId || !secret}
             >
               {isLoading ? (
@@ -165,10 +171,7 @@ export default function ResetPasswordPage() {
           </form>
         </CardContent>
         <CardFooter className="flex justify-center">
-          <Link
-            href="/login"
-            className="text-sm text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
-          >
+          <Link href="/login" className="text-sm text-[#9c6a40] hover:text-[#223366]">
             Back to Login
           </Link>
         </CardFooter>
