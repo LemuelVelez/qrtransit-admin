@@ -187,7 +187,7 @@ export default function RoutesPage() {
               <ScrollArea className="h-[400px]">
                 <div className="min-w-[800px]">
                   <table className="w-full caption-bottom text-sm">
-                    <thead className="[&_tr]:border-b sticky top-0 z-10 bg-slate-100 dark:bg-slate-800">
+                    <thead className="[&_tr]:border-b sticky top-0 z-10 bg-primary hover:primary/30">
                       {table.getHeaderGroups().map((headerGroup) => (
                         <tr key={headerGroup.id} className="border-b transition-colors">
                           {headerGroup.headers.map((header) => (
@@ -208,7 +208,7 @@ export default function RoutesPage() {
                         table.getRowModel().rows.map((row) => (
                           <tr
                             key={row.id}
-                          
+
                           >
                             {row.getVisibleCells().map((cell) => (
                               <td key={cell.id} className="p-4 align-middle [&:has([role=checkbox])]:pr-0">
