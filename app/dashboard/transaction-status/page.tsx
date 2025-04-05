@@ -141,7 +141,7 @@ export default function TransactionStatusPage() {
         )
       case "PENDING":
         return (
-          <Badge variant="outline" className="text-amber-500 border-amber-500">
+          <Badge variant="accent" className="text-white">
             <Clock className="mr-1 h-3 w-3" />
             Pending
           </Badge>
@@ -187,7 +187,7 @@ export default function TransactionStatusPage() {
         <CardContent>
           <Tabs defaultValue="pending" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <TabsList className="w-full sm:w-auto">
+              <TabsList className="max-w-xs bg-primary text-white">
                 <TabsTrigger value="pending">Pending</TabsTrigger>
                 <TabsTrigger value="completed">Completed</TabsTrigger>
                 <TabsTrigger value="failed">Failed</TabsTrigger>
@@ -225,7 +225,7 @@ export default function TransactionStatusPage() {
       </Card>
 
       <Dialog open={!!selectedTransaction} onOpenChange={(open) => !open && setSelectedTransaction(null)}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[500px] bg-primary text-white">
           <DialogHeader>
             <DialogTitle>Update Transaction Status</DialogTitle>
             <DialogDescription>Change the status of transaction {selectedTransaction?.id}</DialogDescription>
@@ -283,7 +283,7 @@ export default function TransactionStatusPage() {
                 <SelectTrigger id="status">
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="text-white bg-secondary">
                   <SelectItem value="PENDING">Pending</SelectItem>
                   <SelectItem value="COMPLETED">Completed</SelectItem>
                   <SelectItem value="FAILED">Failed</SelectItem>
@@ -350,28 +350,28 @@ export default function TransactionStatusPage() {
                 .map((_, i) => (
                   <TableRow key={i}>
                     <TableCell>
-                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-4 w-24 bg-primary/20" />
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
-                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-4 w-24 bg-primary/20" />
                     </TableCell>
                     <TableCell>
-                      <Skeleton className="h-4 w-16" />
+                      <Skeleton className="h-4 w-16 bg-primary/20" />
                     </TableCell>
                     <TableCell>
-                      <Skeleton className="h-4 w-16" />
+                      <Skeleton className="h-4 w-16 bg-primary/20" />
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
-                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-4 w-32 bg-primary/20" />
                     </TableCell>
                     <TableCell>
-                      <Skeleton className="h-4 w-24" />
+                      <Skeleton className="h-4 w-24 bg-primary/20" />
                     </TableCell>
                     <TableCell>
-                      <Skeleton className="h-6 w-20" />
+                      <Skeleton className="h-6 w-20 bg-primary/20" />
                     </TableCell>
                     <TableCell className="text-right">
-                      <Skeleton className="h-8 w-16 ml-auto" />
+                      <Skeleton className="h-8 w-16 ml-auto bg-primary/20" />
                     </TableCell>
                   </TableRow>
                 ))}
