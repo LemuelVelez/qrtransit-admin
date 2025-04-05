@@ -121,7 +121,7 @@ export default function LoginPage() {
           )}
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username" className="text-[#322416]">
+              <Label htmlFor="username" className="text-primary">
                 Username
               </Label>
               <Input
@@ -132,15 +132,15 @@ export default function LoginPage() {
                 placeholder="Enter your username"
                 required
                 disabled={isLoading}
-                className="bg-white/90 border-[#d1ccc1] focus:border-[#9c6a40] focus:ring-[#9c6a40]"
+                className=" text-black border-[#d1ccc1] focus:border-primary focus:ring-primary"
               />
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password" className="text-[#322416]">
+                <Label htmlFor="password" className="text-primary">
                   Password
                 </Label>
-                <Link href="/forgot-password" className="text-sm text-[#9c6a40] hover:text-[#223366]">
+                <Link href="/forgot-password" className="text-sm text-primary hover:text-primary/30">
                   Forgot password?
                 </Link>
               </div>
@@ -153,7 +153,7 @@ export default function LoginPage() {
                   placeholder="Enter your password"
                   required
                   disabled={isLoading}
-                  className="pr-10 bg-white/90 border-[#d1ccc1] focus:border-[#9c6a40] focus:ring-[#9c6a40]"
+                  className="pr-10 text-black border-[#d1ccc1] focus:border-primary focus:ring-primary"
                 />
                 <Button
                   type="button"
@@ -167,7 +167,7 @@ export default function LoginPage() {
                 </Button>
               </div>
             </div>
-            <Button type="submit" className="w-full bg-[#9c6a40] hover:bg-[#223366] text-white" disabled={isLoading}>
+            <Button type="submit" className="w-full bg-primary hover:bg-primary/70 text-white" disabled={isLoading}>
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

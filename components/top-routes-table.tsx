@@ -16,7 +16,7 @@ export function TopRoutesTable({ routes }: TopRoutesTableProps) {
     <div className="rounded-md border overflow-x-auto">
       <Table>
         <TableHeader>
-          <TableRow>
+          <TableRow className="bg-primary hover:bg-primary/50 text-white">
             <TableHead className="font-medium">Route</TableHead>
             <TableHead className="text-right font-medium">Tickets</TableHead>
           </TableRow>
@@ -30,17 +30,17 @@ export function TopRoutesTable({ routes }: TopRoutesTableProps) {
             </TableRow>
           ) : (
             routes.map((route, index) => (
-              <TableRow key={index}>
+              <TableRow key={index} className="hover:bg-primary/50">
                 <TableCell>
                   <div className="flex items-center">
-                    <MapPin className="mr-2 h-4 w-4 text-[hsl(var(--primary))]" />
+                    <MapPin className="mr-2 h-4 w-4 text-primary" />
                     <span>{route.route}</span>
                   </div>
                 </TableCell>
                 <TableCell className="text-right">
                   <Badge
                     variant="outline"
-                    className="bg-[hsl(var(--secondary))]/20 text-[hsl(var(--secondary-foreground))] hover:bg-[hsl(var(--secondary))]/30 border-[hsl(var(--secondary))]"
+                    className="border-primary hover:bg-primary/90"
                   >
                     {route.count}
                   </Badge>

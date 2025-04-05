@@ -115,7 +115,7 @@ export function DatePickerWithRange({ className, date, onDateChange }: DatePicke
             id="date"
             variant={"outline"}
             className={cn(
-              "w-full sm:w-[260px] justify-start text-left font-normal group",
+              "w-full sm:w-[260px] justify-start text-left font-normal group hover:bg-primary/50",
               !date && "text-muted-foreground",
             )}
           >
@@ -144,22 +144,22 @@ export function DatePickerWithRange({ className, date, onDateChange }: DatePicke
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0 bg-popover" align="start">
+        <PopoverContent className="w-auto p-0" align="start">
           <Tabs defaultValue="presets">
             <div className="flex items-center justify-between px-4 pt-3 pb-2">
-              <TabsList className="grid grid-cols-2">
+              <TabsList className="grid grid-cols-2 text-white bg-primary">
                 <TabsTrigger value="presets">Presets</TabsTrigger>
                 <TabsTrigger value="calendar">Calendar</TabsTrigger>
               </TabsList>
             </div>
-            <TabsContent value="presets" className="p-4 space-y-2 bg-popover">
+            <TabsContent value="presets" className="p-4 space-y-2">
               <div className="grid grid-cols-2 gap-2">
                 {datePresets.map((preset) => (
                   <Button
                     key={preset.name}
                     size="sm"
                     variant="outline"
-                    className="justify-start font-normal"
+                    className="justify-start font-normal bg-primary/80 text-white hover:primary/30"
                     onClick={() => handleSelectPreset(preset)}
                   >
                     {preset.label}
@@ -167,8 +167,8 @@ export function DatePickerWithRange({ className, date, onDateChange }: DatePicke
                 ))}
               </div>
             </TabsContent>
-            <TabsContent value="calendar" className="p-0 border-t bg-popover">
-              <div className="bg-popover">
+            <TabsContent value="calendar" className="p-0 border-t">
+              <div className="">
                 <Calendar
                   initialFocus
                   mode="range"
@@ -176,10 +176,10 @@ export function DatePickerWithRange({ className, date, onDateChange }: DatePicke
                   selected={date}
                   onSelect={onDateChange}
                   numberOfMonths={isDesktop ? 2 : 1}
-                  className="p-3 bg-popover"
+                  className="p-3 bg-primary text-white"
                 />
               </div>
-              <div className="flex items-center justify-between p-3 border-t bg-popover">
+              <div className="flex items-center justify-between p-3 border-t">
                 <Button variant="ghost" size="sm" onClick={() => handleClearDate()}>
                   Clear
                 </Button>

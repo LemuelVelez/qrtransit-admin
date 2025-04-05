@@ -32,7 +32,7 @@ export function RecentTransactionsTable() {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center py-8">
-        <Loader2 className="h-6 w-6 animate-spin text-[hsl(var(--primary))]" />
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
       </div>
     )
   }
@@ -41,7 +41,7 @@ export function RecentTransactionsTable() {
     <div className="rounded-md border overflow-x-auto">
       <Table>
         <TableHeader>
-          <TableRow>
+          <TableRow className="bg-primary hover:bg-primary/50 text-white">
             <TableHead className="font-medium">Date</TableHead>
             <TableHead className="font-medium">Passenger</TableHead>
             <TableHead className="font-medium">Route</TableHead>
@@ -52,13 +52,13 @@ export function RecentTransactionsTable() {
         <TableBody>
           {transactions.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+              <TableCell colSpan={5} className="text-center text-black py-6 text-muted-foreground">
                 No transactions found
               </TableCell>
             </TableRow>
           ) : (
             transactions.map((transaction) => (
-              <TableRow key={transaction.id}>
+              <TableRow key={transaction.id} className="hover:bg-primary/50">
                 <TableCell className="whitespace-nowrap">{formatDate(transaction.timestamp)}</TableCell>
                 <TableCell className="font-medium">{transaction.passengerName}</TableCell>
                 <TableCell className="whitespace-nowrap">
@@ -66,17 +66,14 @@ export function RecentTransactionsTable() {
                 </TableCell>
                 <TableCell>
                   {transaction.paymentMethod === "QR" ? (
-                    <Badge
-                      variant="default"
-                      className="bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] hover:bg-[hsl(var(--primary))]/90"
-                    >
+                    <Badge variant="default" className="border-primary hover:bg-primary/90">
                       <QrCode className="mr-1 h-3 w-3" />
                       {transaction.paymentMethod}
                     </Badge>
                   ) : (
                     <Badge
                       variant="outline"
-                      className="border-[hsl(var(--secondary))] bg-[hsl(var(--secondary))]/20 text-[hsl(var(--secondary-foreground))] hover:bg-[hsl(var(--secondary))]/30"
+                      className="border-primary hover:bg-primary/90"
                     >
                       <Banknote className="mr-1 h-3 w-3" />
                       {transaction.paymentMethod}

@@ -63,7 +63,7 @@ export default function ForgotPasswordPage() {
           )}
           <form onSubmit={handleResetPassword} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-[#322416]">
+              <Label htmlFor="email" className="text-primary">
                 Email
               </Label>
               <Input
@@ -74,12 +74,12 @@ export default function ForgotPasswordPage() {
                 placeholder="Enter your email address"
                 required
                 disabled={isLoading || success}
-                className="bg-white/90 border-[#d1ccc1] text-[#322416]"
+                className=" text-black border-[#d1ccc1] focus:border-primary focus:ring-primary"
               />
             </div>
             <Button
               type="submit"
-              className="w-full bg-[#223366] hover:bg-[#1c2431] text-white"
+              className="w-full bg-primary hover:bg-primary/30 text-white"
               disabled={isLoading || success}
             >
               {isLoading ? (
@@ -94,7 +94,7 @@ export default function ForgotPasswordPage() {
           </form>
         </CardContent>
         <CardFooter className="flex justify-center">
-          <Link href="/login" className="text-sm text-[#9c6a40] hover:text-[#223366]">
+          <Link href="/login" className="text-sm text-primary hover:text-primary/30">
             Back to Login
           </Link>
         </CardFooter>
