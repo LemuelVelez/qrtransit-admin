@@ -90,9 +90,9 @@ export default function UsersPage() {
       case "conductor":
         return "secondary"
       case "inspector":
-        return "outline"
+        return "accent"
       default:
-        return "secondary"
+        return "outline"
     }
   }
 
@@ -155,7 +155,7 @@ export default function UsersPage() {
                         <TableCell className="hidden md:table-cell">{user.email}</TableCell>
                         <TableCell className="hidden md:table-cell">{user.phonenumber}</TableCell>
                         <TableCell>
-                          <Badge variant={getRoleBadgeVariant(user.role)}>{user.role || "passenger"}</Badge>
+                          <Badge className="text-white" variant={getRoleBadgeVariant(user.role)}>{user.role || "passenger"}</Badge>
                         </TableCell>
                         <TableCell className="hidden md:table-cell">{formatDate(user.createdAt)}</TableCell>
                         <TableCell>
@@ -166,7 +166,7 @@ export default function UsersPage() {
                                 <span className="sr-only">Actions</span>
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
+                            <DropdownMenuContent align="end" className="bg-primary text-white">
                               <DropdownMenuItem
                                 onClick={() => {
                                   setSelectedUser(user)

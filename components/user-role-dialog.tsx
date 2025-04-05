@@ -60,7 +60,7 @@ export function UserRoleDialog({ user, open, onOpenChange, onRoleChange, isUpdat
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[425px] bg-primary text-white">
           <DialogHeader>
             <DialogTitle>Change User Role</DialogTitle>
             <DialogDescription>
@@ -74,7 +74,7 @@ export function UserRoleDialog({ user, open, onOpenChange, onRoleChange, isUpdat
                 <SelectTrigger id="role" className="w-full">
                   <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="text-white bg-secondary/50">
                   <SelectItem value="passenger">Passenger</SelectItem>
                   <SelectItem value="conductor">Conductor</SelectItem>
                   <SelectItem value="inspector">Inspector</SelectItem>
