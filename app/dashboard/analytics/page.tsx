@@ -54,7 +54,7 @@ export default function AnalyticsPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="w-full sm:w-auto">
+        <TabsList className="w-fit bg-primary text-white">
           <TabsTrigger value="revenue">Revenue</TabsTrigger>
           <TabsTrigger value="routes">Routes</TabsTrigger>
           <TabsTrigger value="payment">Payment Methods</TabsTrigger>
@@ -94,9 +94,9 @@ export default function AnalyticsPage() {
               <CardContent>
                 {isLoading ? (
                   <div className="space-y-2">
-                    <div className="h-6 bg-muted/20 animate-pulse rounded-md w-3/4"></div>
-                    <div className="h-6 bg-muted/20 animate-pulse rounded-md w-2/3"></div>
-                    <div className="h-6 bg-muted/20 animate-pulse rounded-md w-4/5"></div>
+                    <div className="h-6 animate-pulse rounded-md w-3/4"></div>
+                    <div className="h-6 animate-pulse rounded-md w-2/3"></div>
+                    <div className="h-6 animate-pulse rounded-md w-4/5"></div>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -173,7 +173,7 @@ export default function AnalyticsPage() {
                 <div className="rounded-md border overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b bg-muted/50">
+                      <tr className="bg-primary hover:bg-primary/50 text-white">
                         <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">
                           Bus Number
                         </th>
@@ -192,7 +192,7 @@ export default function AnalyticsPage() {
                           <tr key={index} className="border-b">
                             <td className="p-4 align-middle">{bus.busNumber}</td>
                             <td className="p-4 align-middle text-right">
-                              <span className="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold">
+                              <span className="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold border-primary hover:bg-primary/90">
                                 {bus.count}
                               </span>
                             </td>
