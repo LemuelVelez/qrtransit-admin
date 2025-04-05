@@ -37,7 +37,7 @@ export default function ReportsPage() {
       </div>
 
       <Tabs defaultValue="generate" className="space-y-4">
-        <TabsList>
+        <TabsList className="bg-primary text-white">
           <TabsTrigger value="generate">Generate Report</TabsTrigger>
           <TabsTrigger value="saved">Saved Reports</TabsTrigger>
         </TabsList>
@@ -140,7 +140,7 @@ export default function ReportsPage() {
               <div className="rounded-md border">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b bg-muted/50">
+                    <tr className="border-b bg-primary hover:bg-primary/50 text-white">
                       <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">
                         Report Name
                       </th>
