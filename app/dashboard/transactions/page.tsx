@@ -14,6 +14,7 @@ import { subDays } from "date-fns"
 import { Search, Download, Loader2, QrCode, Banknote } from "lucide-react"
 import { getAllTrips, getTripsByDateRange } from "@/lib/trips-service"
 import { formatDate } from "@/lib/utils"
+import { ScrollAreaScrollbar } from "@radix-ui/react-scroll-area"
 
 export default function TransactionsPage() {
   const [trips, setTrips] = useState<any[]>([])
@@ -132,10 +133,10 @@ export default function TransactionsPage() {
             </div>
           ) : (
             <div className="rounded-md border">
-              <ScrollArea className="w-full" orientation="horizontal">
+              <ScrollArea className="w-full">
                 <Table className="w-full">
                   <TableHeader>
-                    <TableRow>
+                    <TableRow className="hover:bg-primary/50">
                       <TableHead className="min-w-[100px]">Date</TableHead>
                       <TableHead className="min-w-[120px]">Passenger</TableHead>
                       <TableHead className="min-w-[150px]">Route</TableHead>
@@ -154,7 +155,7 @@ export default function TransactionsPage() {
                       </TableRow>
                     ) : (
                       filteredTrips.map((trip) => (
-                        <TableRow key={trip.id}>
+                        <TableRow key={trip.id} className="hover:primary/30">
                           <TableCell>{formatDate(trip.timestamp)}</TableCell>
                           <TableCell className="font-medium truncate max-w-[120px]">{trip.passengerName}</TableCell>
                           <TableCell className="truncate max-w-[150px]">
@@ -162,7 +163,7 @@ export default function TransactionsPage() {
                           </TableCell>
                           <TableCell>{trip.busNumber || "N/A"}</TableCell>
                           <TableCell>
-                            <Badge variant={trip.paymentMethod === "QR" ? "default" : "outline"}>
+                            <Badge variant={trip.paymentMethod === "QR" ? "default" : "outline"} className="bg-primary border-primary hover:bg-primary/90 text-white">
                               {trip.paymentMethod === "QR" ? (
                                 <QrCode className="mr-1 h-3 w-3" />
                               ) : (
@@ -180,6 +181,7 @@ export default function TransactionsPage() {
                     )}
                   </TableBody>
                 </Table>
+                <ScrollAreaScrollbar orientation="horizontal" />
               </ScrollArea>
             </div>
           )}
