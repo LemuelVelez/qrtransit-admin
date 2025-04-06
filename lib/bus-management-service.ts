@@ -85,6 +85,7 @@ export async function getBusesWithConductors(
     }
 
     // 2. Get all trips for these buses in the date range
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     for (const [busKey, busData] of busMap.entries()) {
       const tripsResponse = await databases.listDocuments(
         databaseId,
