@@ -209,7 +209,7 @@ export default function BusManagementPage() {
 
             {/* Remittance Dialog */}
             <Dialog open={showRemittanceDialog} onOpenChange={setShowRemittanceDialog}>
-                <DialogContent className="sm:max-w-[425px]">
+                <DialogContent className="sm:max-w-[425px] bg-primary text-white">
                     <DialogHeader>
                         <DialogTitle>Confirm Cash Remittance</DialogTitle>
                         <DialogDescription>
@@ -298,100 +298,89 @@ export default function BusManagementPage() {
 
         return (
             <div className="rounded-md border overflow-hidden">
-                <ScrollArea className="h-[600px]">
-                    <div className="min-w-[800px]">
-                        <Table>
-                            <TableHeader className="sticky top-0 z-10 bg-primary text-white">
-                                <TableRow>
-                                    <TableHead className="w-[120px]">Bus Number</TableHead>
-                                    <TableHead className="w-[200px]">Conductor</TableHead>
-                                    <TableHead className="w-[200px]">Route</TableHead>
-                                    <TableHead className="w-[120px]">QR Revenue</TableHead>
-                                    <TableHead className="w-[120px]">Cash Revenue</TableHead>
-                                    <TableHead className="w-[120px]">Total Revenue</TableHead>
-                                    <TableHead className="w-[150px]">Remittance Status</TableHead>
-                                    <TableHead className="w-[100px] text-right">Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {filteredBuses.map((bus) => (
-                                    <TableRow key={bus.id}>
-                                        <TableCell className="font-medium">{bus.busNumber}</TableCell>
-                                        <TableCell>{bus.conductorName}</TableCell>
-                                        <TableCell>{bus.route}</TableCell>
-                                        <TableCell>
-                                            <div className="flex items-center">
-                                                <QrCode className="mr-2 h-4 w-4 text-primary" />
-                                                {formatCurrency(bus.qrRevenue)}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex items-center">
-                                                <Banknote className="mr-2 h-4 w-4 text-primary" />
-                                                {formatCurrency(bus.cashRevenue)}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="font-semibold">{formatCurrency(bus.totalRevenue)}</TableCell>
-                                        <TableCell>
-                                            {bus.cashRevenue > 0 ? (
-                                                bus.cashRemitted ? (
-                                                    <Badge className="bg-green-600 hover:bg-green-700 text-white">
-                                                        <CheckCircle className="mr-1 h-3 w-3" />
-                                                        Remitted
-                                                    </Badge>
-                                                ) : (
-                                                    <Badge variant="outline" className="border-red-500 text-red-500">
-                                                        <XCircle className="mr-1 h-3 w-3" />
-                                                        Pending
-                                                    </Badge>
-                                                )
-                                            ) : (
-                                                <Badge variant="outline" className="border-gray-500 text-gray-500">
-                                                    No Cash
+                <ScrollArea className="whitespace-nowrap rounded-md border mx-auto">
+                    <Table>
+                        <TableHeader className="sticky top-0 z-10 bg-primary text-white">
+                            <TableRow className="hover:primary/30">
+                                <TableHead className="w-[120px]">Bus Number</TableHead>
+                                <TableHead className="w-[200px]">Conductor</TableHead>
+                                <TableHead className="w-[200px]">Route</TableHead>
+                                <TableHead className="w-[120px]">QR Revenue</TableHead>
+                                <TableHead className="w-[120px]">Cash Revenue</TableHead>
+                                <TableHead className="w-[120px]">Total Revenue</TableHead>
+                                <TableHead className="w-[150px]">Remittance Status</TableHead>
+                                <TableHead className="w-[100px] text-right">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {filteredBuses.map((bus) => (
+                                <TableRow key={bus.id}>
+                                    <TableCell className="font-medium">{bus.busNumber}</TableCell>
+                                    <TableCell>{bus.conductorName}</TableCell>
+                                    <TableCell>{bus.route}</TableCell>
+                                    <TableCell>
+                                        <div className="flex items-center">
+                                            <QrCode className="mr-2 h-4 w-4 text-primary" />
+                                            {formatCurrency(bus.qrRevenue)}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex items-center">
+                                            <Banknote className="mr-2 h-4 w-4 text-primary" />
+                                            {formatCurrency(bus.cashRevenue)}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="font-semibold">{formatCurrency(bus.totalRevenue)}</TableCell>
+                                    <TableCell>
+                                        {bus.cashRevenue > 0 ? (
+                                            bus.cashRemitted ? (
+                                                <Badge className="text-white">
+                                                    <CheckCircle className="mr-1 h-3 w-3" />
+                                                    Remitted
                                                 </Badge>
-                                            )}
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="sm">
-                                                        Actions
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    {bus.cashRevenue > 0 && (
-                                                        <>
-                                                            {!bus.cashRemitted ? (
-                                                                <DropdownMenuItem
-                                                                    onClick={() => handleRemittanceStatusUpdate(bus, true)}
-                                                                    className="text-green-600"
-                                                                >
-                                                                    <CheckCircle className="mr-2 h-4 w-4" />
-                                                                    Mark as Remitted
-                                                                </DropdownMenuItem>
-                                                            ) : (
-                                                                <DropdownMenuItem
-                                                                    onClick={() => handleRemittanceStatusUpdate(bus, false)}
-                                                                    className="text-red-500"
-                                                                >
-                                                                    <XCircle className="mr-2 h-4 w-4" />
-                                                                    Mark as Not Remitted
-                                                                </DropdownMenuItem>
-                                                            )}
-                                                        </>
-                                                    )}
-                                                    <DropdownMenuItem>
-                                                        <Bus className="mr-2 h-4 w-4" />
-                                                        View Bus Details
+                                            ) : (
+                                                <Badge variant="accent" className="text-white">
+                                                    <XCircle className="mr-1 h-3 w-3" />
+                                                    Pending
+                                                </Badge>
+                                            )
+                                        ) : (
+                                            <Badge variant="outline" className="text-white">
+                                                No Cash
+                                            </Badge>
+                                        )}
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button size="sm" className="text-white hover:primary/30">
+                                                    Actions
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                {bus.cashRevenue > 0 && !bus.cashRemitted && (
+                                                    <DropdownMenuItem
+                                                        onClick={() => handleRemittanceStatusUpdate(bus, true)}
+                                                        className="bg-primary text-white mb-2"
+                                                    >
+                                                        <CheckCircle className="mr-2 h-4 w-4" />
+                                                        Mark as Remitted
                                                     </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </div>
+                                                )}
+                                                <DropdownMenuItem
+                                                    onClick={() => handleRemittanceStatusUpdate(bus, false)}
+                                                    className="bg-red-700 text-white"
+                                                >
+                                                    <XCircle className="mr-2 h-4 w-4" />
+                                                    Mark as Not Remitted
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
                     <ScrollBar orientation="horizontal" />
                 </ScrollArea>
             </div>

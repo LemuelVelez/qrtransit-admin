@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { databases, config } from "./appwrite";
 import { Query } from "appwrite";
 import { getTripsCollectionId } from "./trips-service";
@@ -24,6 +25,11 @@ const getCashRemittanceCollectionId = () => {
   return process.env.NEXT_PUBLIC_APPWRITE_CASH_REMITTANCE_COLLECTION_ID || "";
 };
 
+// Collection ID for users
+const getUsersCollectionId = () => {
+  return process.env.NEXT_PUBLIC_APPWRITE_USERS_COLLECTION_ID || "";
+};
+
 /**
  * Get buses with their conductors and revenue information for a specific date range
  */
@@ -36,8 +42,14 @@ export async function getBusesWithConductors(
     const routesCollectionId = getRoutesCollectionId();
     const tripsCollectionId = getTripsCollectionId();
     const remittanceCollectionId = getCashRemittanceCollectionId();
+    const usersCollectionId = getUsersCollectionId();
 
-    if (!databaseId || !routesCollectionId || !tripsCollectionId) {
+    if (
+      !databaseId ||
+      !routesCollectionId ||
+      !tripsCollectionId ||
+      !usersCollectionId
+    ) {
       throw new Error("Appwrite configuration missing");
     }
 
@@ -65,6 +77,12 @@ export async function getBusesWithConductors(
     // Create a map to store unique bus-conductor combinations
     const busMap = new Map<string, BusWithConductor>();
 
+    // Create a map to cache conductor information
+    const conductorCache = new Map<
+      string,
+      { firstName: string; lastName: string }
+    >();
+
     // Process routes to get unique bus-conductor combinations
     for (const route of routesResponse.documents) {
       const busKey = `${route.busNumber}-${route.conductorId}`;
@@ -74,13 +92,52 @@ export async function getBusesWithConductors(
           id: route.$id,
           busNumber: route.busNumber,
           conductorId: route.conductorId,
-          conductorName: route.conductorName || "Unknown Conductor",
+          conductorName: "Unknown Conductor", // Will be updated later
           route: `${route.from} → ${route.to}`,
           qrRevenue: 0,
           cashRevenue: 0,
           totalRevenue: 0,
           cashRemitted: false,
         });
+      }
+    }
+
+    // Fetch conductor information from users collection
+    for (const [busKey, busData] of busMap.entries()) {
+      if (!conductorCache.has(busData.conductorId)) {
+        try {
+          // Query the users collection to find the conductor by userId
+          const usersResponse = await databases.listDocuments(
+            databaseId,
+            usersCollectionId,
+            [
+              Query.equal("userId", busData.conductorId),
+              Query.equal("role", "conductor"),
+              Query.limit(1),
+            ]
+          );
+
+          if (usersResponse.documents.length > 0) {
+            const user = usersResponse.documents[0];
+            conductorCache.set(busData.conductorId, {
+              firstName: user.firstname || "",
+              lastName: user.lastname || "",
+            });
+          }
+        } catch (error) {
+          console.error(
+            `Error fetching conductor ${busData.conductorId} details:`,
+            error
+          );
+        }
+      }
+
+      // Update conductor name if found in cache
+      if (conductorCache.has(busData.conductorId)) {
+        const conductor = conductorCache.get(busData.conductorId)!;
+        busData.conductorName =
+          `${conductor.firstName} ${conductor.lastName}`.trim() ||
+          "Unknown Conductor";
       }
     }
 
@@ -162,8 +219,14 @@ export async function updateCashRemittanceStatus(
     const databaseId = config.databaseId;
     const remittanceCollectionId = getCashRemittanceCollectionId();
     const routesCollectionId = getRoutesCollectionId();
+    const usersCollectionId = getUsersCollectionId();
 
-    if (!databaseId || !remittanceCollectionId || !routesCollectionId) {
+    if (
+      !databaseId ||
+      !remittanceCollectionId ||
+      !routesCollectionId ||
+      !usersCollectionId
+    ) {
       throw new Error("Appwrite configuration missing");
     }
 
@@ -173,6 +236,29 @@ export async function updateCashRemittanceStatus(
       routesCollectionId,
       busId
     );
+
+    // Get conductor details
+    let conductorName = "Unknown Conductor";
+    try {
+      const usersResponse = await databases.listDocuments(
+        databaseId,
+        usersCollectionId,
+        [
+          Query.equal("userId", busDetails.conductorId),
+          Query.equal("role", "conductor"),
+          Query.limit(1),
+        ]
+      );
+
+      if (usersResponse.documents.length > 0) {
+        const user = usersResponse.documents[0];
+        conductorName =
+          `${user.firstname || ""} ${user.lastname || ""}`.trim() ||
+          "Unknown Conductor";
+      }
+    } catch (error) {
+      console.error(`Error fetching conductor details:`, error);
+    }
 
     // Check if there's an existing remittance record
     const existingRemittanceResponse = await databases.listDocuments(
@@ -186,7 +272,7 @@ export async function updateCashRemittanceStatus(
       busId: busId,
       busNumber: busDetails.busNumber,
       conductorId: busDetails.conductorId,
-      conductorName: busDetails.conductorName || "Unknown Conductor",
+      conductorName: conductorName,
       status: remitted ? "remitted" : "pending",
       amount: amount.toString(),
       notes: notes,
