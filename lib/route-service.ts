@@ -13,11 +13,52 @@ export interface RouteInfo {
 }
 
 // Get the collection ID for routes
-const getRoutesCollectionId = () => {
+export const getRoutesCollectionId = () => {
   return process.env.NEXT_PUBLIC_APPWRITE_ROUTES_COLLECTION_ID || "";
 };
 
-// Get all routes
+// Get the collection ID for users
+export const getUsersCollectionId = () => {
+  return process.env.NEXT_PUBLIC_APPWRITE_USERS_COLLECTION_ID || "";
+};
+
+// Get conductor information by ID
+export async function getConductorById(
+  conductorId: string
+): Promise<{ name: string; role: string } | null> {
+  try {
+    const databaseId = config.databaseId;
+    const collectionId = getUsersCollectionId();
+
+    if (!databaseId || !collectionId) {
+      throw new Error("Appwrite configuration missing");
+    }
+
+    // Query for users where userId matches the conductorId
+    const response = await databases.listDocuments(databaseId, collectionId, [
+      Query.equal("userId", conductorId),
+    ]);
+
+    // Check if we found a matching user
+    if (response.documents.length > 0) {
+      const user = response.documents[0];
+
+      if (user && user.role === "conductor") {
+        return {
+          name: `${user.firstname} ${user.lastname}`.trim(),
+          role: user.role,
+        };
+      }
+    }
+
+    return null;
+  } catch (error) {
+    console.error("Error getting conductor information:", error);
+    return null;
+  }
+}
+
+// Get all routes with conductor information
 export async function getAllRoutes(): Promise<RouteInfo[]> {
   try {
     const databaseId = config.databaseId;
@@ -31,7 +72,7 @@ export async function getAllRoutes(): Promise<RouteInfo[]> {
       Query.orderDesc("timestamp"),
     ]);
 
-    return response.documents.map((route) => ({
+    const routes = response.documents.map((route) => ({
       id: route.$id,
       from: route.from,
       to: route.to,
@@ -41,6 +82,24 @@ export async function getAllRoutes(): Promise<RouteInfo[]> {
       conductorName: route.conductorName || "",
       conductorId: route.conductorId,
     }));
+
+    // Fetch conductor information for routes with missing conductor names
+    const routesWithConductors = await Promise.all(
+      routes.map(async (route) => {
+        if (!route.conductorName && route.conductorId) {
+          const conductorInfo = await getConductorById(route.conductorId);
+          if (conductorInfo) {
+            return {
+              ...route,
+              conductorName: conductorInfo.name,
+            };
+          }
+        }
+        return route;
+      })
+    );
+
+    return routesWithConductors;
   } catch (error) {
     console.error("Error getting all routes:", error);
     return [];
@@ -62,7 +121,7 @@ export async function getActiveRoutes(): Promise<RouteInfo[]> {
       Query.orderDesc("timestamp"),
     ]);
 
-    return response.documents.map((route) => ({
+    const routes = response.documents.map((route) => ({
       id: route.$id,
       from: route.from,
       to: route.to,
@@ -72,6 +131,24 @@ export async function getActiveRoutes(): Promise<RouteInfo[]> {
       conductorName: route.conductorName || "",
       conductorId: route.conductorId,
     }));
+
+    // Fetch conductor information for routes with missing conductor names
+    const routesWithConductors = await Promise.all(
+      routes.map(async (route) => {
+        if (!route.conductorName && route.conductorId) {
+          const conductorInfo = await getConductorById(route.conductorId);
+          if (conductorInfo) {
+            return {
+              ...route,
+              conductorName: conductorInfo.name,
+            };
+          }
+        }
+        return route;
+      })
+    );
+
+    return routesWithConductors;
   } catch (error) {
     console.error("Error getting active routes:", error);
     return [];
@@ -95,7 +172,7 @@ export async function getRoutesByBusNumber(
       Query.orderDesc("timestamp"),
     ]);
 
-    return response.documents.map((route) => ({
+    const routes = response.documents.map((route) => ({
       id: route.$id,
       from: route.from,
       to: route.to,
@@ -105,6 +182,24 @@ export async function getRoutesByBusNumber(
       conductorName: route.conductorName || "",
       conductorId: route.conductorId,
     }));
+
+    // Fetch conductor information for routes with missing conductor names
+    const routesWithConductors = await Promise.all(
+      routes.map(async (route) => {
+        if (!route.conductorName && route.conductorId) {
+          const conductorInfo = await getConductorById(route.conductorId);
+          if (conductorInfo) {
+            return {
+              ...route,
+              conductorName: conductorInfo.name,
+            };
+          }
+        }
+        return route;
+      })
+    );
+
+    return routesWithConductors;
   } catch (error) {
     console.error("Error getting routes by bus number:", error);
     return [];

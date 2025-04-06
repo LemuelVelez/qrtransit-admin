@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
 import React from "react"
@@ -44,6 +43,7 @@ import {
   FileText,
   LogOut,
   User,
+  DollarSign,
 } from "lucide-react"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
@@ -160,6 +160,12 @@ export function DashboardLayout({ children, user }: { children: React.ReactNode;
                     icon={CreditCard}
                     label="Transaction Status"
                     isActive={pathname === "/dashboard/transaction-status"}
+                  />
+                  <CustomSidebarMenuButton
+                    href="/dashboard/bus-management"
+                    icon={DollarSign}
+                    label="Bus Management"
+                    isActive={pathname === "/dashboard/bus-management"}
                   />
                 </SidebarMenu>
               </SidebarGroupContent>

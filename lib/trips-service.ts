@@ -21,7 +21,7 @@ export interface Trip {
 }
 
 // Get the collection ID for trips
-const getTripsCollectionId = () => {
+export const getTripsCollectionId = () => {
   return process.env.NEXT_PUBLIC_APPWRITE_TRIPS_COLLECTION_ID || "";
 };
 

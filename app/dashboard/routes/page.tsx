@@ -101,7 +101,11 @@ export default function RoutesPage() {
       {
         accessorKey: "conductorName",
         header: "Conductor",
-        cell: ({ row }) => <div className="max-w-[120px] truncate">{row.original.conductorName || "Unknown"}</div>,
+        cell: ({ row }) => (
+          <div className="max-w-[120px] truncate">
+            {row.original.conductorName || <span className="text-slate-500 italic">Unknown</span>}
+          </div>
+        ),
       },
       {
         accessorKey: "timestamp",
@@ -206,10 +210,7 @@ export default function RoutesPage() {
                     <tbody className="[&_tr:last-child]:border-0">
                       {table.getRowModel().rows?.length ? (
                         table.getRowModel().rows.map((row) => (
-                          <tr
-                            key={row.id}
-
-                          >
+                          <tr key={row.id} className="border-b transition-colors hover:bg-muted/50">
                             {row.getVisibleCells().map((cell) => (
                               <td key={cell.id} className="p-4 align-middle [&:has([role=checkbox])]:pr-0">
                                 {flexRender(cell.column.columnDef.cell, cell.getContext())}
