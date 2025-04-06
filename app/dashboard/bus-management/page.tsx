@@ -300,7 +300,7 @@ export default function BusManagementPage() {
             <div className="rounded-md border overflow-hidden">
                 <ScrollArea className="whitespace-nowrap rounded-md border mx-auto">
                     <Table>
-                        <TableHeader className="sticky top-0 z-10 bg-primary text-white">
+                        <TableHeader className="sticky top-0 bg-primary text-white">
                             <TableRow className="hover:primary/30">
                                 <TableHead className="w-[120px]">Bus Number</TableHead>
                                 <TableHead className="w-[200px]">Conductor</TableHead>
