@@ -143,15 +143,15 @@ export default function BusManagementPage() {
       const updatedBuses = buses.map((bus) =>
         bus.id === busId
           ? {
-              ...bus,
-              remittanceStatus: remitted ? "remitted" : "pending",
-              cashRemitted: remitted,
-              remittanceAmount: remitted ? amount : 0,
-              remittanceNotes: remitted ? notes : "",
-              verificationTimestamp: remitted ? Date.now() : undefined,
-              // Reset revenue to zero if remitted
-              cashRevenue: remitted ? 0 : bus.cashRevenue,
-            }
+            ...bus,
+            remittanceStatus: remitted ? "remitted" : "pending",
+            cashRemitted: remitted,
+            remittanceAmount: remitted ? amount : 0,
+            remittanceNotes: remitted ? notes : "",
+            verificationTimestamp: remitted ? Date.now() : undefined,
+            // Reset revenue to zero if remitted
+            cashRevenue: remitted ? 0 : bus.cashRevenue,
+          }
           : bus,
       )
 
@@ -233,13 +233,16 @@ export default function BusManagementPage() {
           <CardDescription>View revenue by bus and track cash remittance status</CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Update the Tabs section to be more responsive */}
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <TabsList className="bg-primary text-white">
-                <TabsTrigger value="all">All Buses</TabsTrigger>
-                <TabsTrigger value="pending">Pending Verification</TabsTrigger>
-                <TabsTrigger value="remitted">Remitted</TabsTrigger>
-              </TabsList>
+              <div className="w-full overflow-x-auto pb-2">
+                <TabsList className="bg-primary text-white w-auto inline-flex">
+                  <TabsTrigger value="all">All Buses</TabsTrigger>
+                  <TabsTrigger value="pending">Pending Verification</TabsTrigger>
+                  <TabsTrigger value="remitted">Remitted</TabsTrigger>
+                </TabsList>
+              </div>
 
               <div className="relative w-full sm:w-auto">
                 <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -311,7 +314,7 @@ export default function BusManagementPage() {
             <Button variant="outline" onClick={() => setShowRemittanceDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handleConfirmRemittance} disabled={isUpdating}>
+            <Button onClick={handleConfirmRemittance} disabled={isUpdating} variant="secondary">
               {isUpdating ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -327,14 +330,14 @@ export default function BusManagementPage() {
 
       {/* Remittance History Dialog */}
       <Dialog open={showHistoryDialog} onOpenChange={setShowHistoryDialog}>
-        <DialogContent className="sm:max-w-[700px] bg-primary text-white">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-[700px] max-h-[80vh] bg-primary text-white overflow-hidden flex flex-col">
+          <DialogHeader className="shrink-0">
             <DialogTitle>Remittance History</DialogTitle>
             <DialogDescription>
               Remittance history for Bus {selectedBus?.busNumber} operated by {selectedBus?.conductorName}
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4">
+          <div className="py-4 flex-1 overflow-hidden">
             {isLoadingHistory ? (
               <div className="flex justify-center items-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin text-white" />
@@ -344,56 +347,59 @@ export default function BusManagementPage() {
                 <p>No remittance history found for this bus.</p>
               </div>
             ) : (
-              <div className="rounded-md border border-white/20 overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="hover:bg-white/10">
-                      <TableHead className="text-white">Date</TableHead>
-                      <TableHead className="text-white">Amount</TableHead>
-                      <TableHead className="text-white">Status</TableHead>
-                      <TableHead className="text-white">Revenue ID</TableHead>
-                      <TableHead className="text-white">Notes</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {remittanceHistory.map((item) => (
-                      <TableRow key={item.id} className="hover:bg-white/10">
-                        <TableCell className="text-white">
-                          {formatDate(item.timestamp)}
-                          {item.verificationTimestamp && (
-                            <div className="text-xs text-white/70 mt-1">
-                              Verified: {formatDate(item.verificationTimestamp)}
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell className="font-semibold text-white">{formatCurrency(item.amount)}</TableCell>
-                        <TableCell>
-                          <Badge
-                            className={`${
-                              item.status === "remitted"
+              <div className="rounded-md border border-white/20 overflow-hidden h-full">
+                <ScrollArea className="h-[calc(100%-2rem)] max-h-[50vh]">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="hover:bg-white/10">
+                        <TableHead className="text-white sticky top-0 bg-primary z-10">Date</TableHead>
+                        <TableHead className="text-white sticky top-0 bg-primary z-10">Amount</TableHead>
+                        <TableHead className="text-white sticky top-0 bg-primary z-10">Status</TableHead>
+                        <TableHead className="text-white sticky top-0 bg-primary z-10">Revenue ID</TableHead>
+                        <TableHead className="text-white sticky top-0 bg-primary z-10">Notes</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {remittanceHistory.map((item) => (
+                        <TableRow key={item.id} className="hover:bg-white/10">
+                          <TableCell className="text-white">
+                            {formatDate(item.timestamp)}
+                            {item.verificationTimestamp && (
+                              <div className="text-xs text-white/70 mt-1">
+                                Verified: {formatDate(item.verificationTimestamp)}
+                              </div>
+                            )}
+                          </TableCell>
+                          <TableCell className="font-semibold text-white">{formatCurrency(item.amount)}</TableCell>
+                          <TableCell>
+                            <Badge
+                              className={`${item.status === "remitted"
                                 ? "bg-green-600"
                                 : item.status === "pending"
                                   ? "bg-yellow-600"
                                   : "bg-blue-600"
-                            } text-white`}
-                          >
-                            {item.status === "remitted"
-                              ? "Remitted"
-                              : item.status === "pending"
-                                ? "Pending"
-                                : "Remitted"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-white/80 text-xs">{item.revenueId || "N/A"}</TableCell>
-                        <TableCell className="text-white/80">{item.notes || "No notes"}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                                } text-white`}
+                            >
+                              {item.status === "remitted"
+                                ? "Remitted"
+                                : item.status === "pending"
+                                  ? "Pending"
+                                  : "Remitted"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-white/80 text-xs">{item.revenueId || "N/A"}</TableCell>
+                          <TableCell className="text-white/80">{item.notes || "No notes"}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  <ScrollBar orientation="vertical" />
+                  <ScrollBar orientation="horizontal" />
+                </ScrollArea>
               </div>
             )}
           </div>
-          <DialogFooter>
+          <DialogFooter className="shrink-0">
             <Button variant="outline" onClick={() => setShowHistoryDialog(false)}>
               Close
             </Button>
