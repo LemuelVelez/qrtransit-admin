@@ -311,7 +311,7 @@ export default function TransactionStatusPage() {
             >
               Cancel
             </Button>
-            <Button onClick={handleUpdateStatus} disabled={isUpdating || updateSuccess} className="w-full sm:w-auto">
+            <Button variant="secondary" onClick={handleUpdateStatus} disabled={isUpdating || updateSuccess} className="w-full sm:w-auto">
               {isUpdating ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
