@@ -12,8 +12,6 @@ import { getAnalyticsData, getAllTrips } from "@/lib/trips-service"
 import { formatCurrency } from "@/lib/utils"
 import { RevenueChart } from "@/components/revenue-chart"
 import { PaymentMethodChart } from "@/components/payment-method-chart"
-import { TopRoutesTable } from "@/components/top-routes-table"
-import { RecentTransactionsTable } from "@/components/recent-transactions-table"
 import { Skeleton } from "@/components/ui/skeleton"
 
 export default function DashboardPage() {
@@ -465,68 +463,6 @@ export default function DashboardPage() {
                   qrRevenue={analyticsData?.qrRevenue || 0}
                   cashRevenue={analyticsData?.cashRevenue || 0}
                 />
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Tables */}
-        <div className="grid gap-4 grid-cols-1 lg:grid-cols-7">
-          <Card className="col-span-full lg:col-span-4">
-            <CardHeader>
-              <div className="flex items-center">
-                <CardTitle className="font-heading">Recent Transactions</CardTitle>
-              </div>
-              <CardDescription>Latest ticket sales across all routes</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="rounded-md border border-secondary-2/30">
-                  <div className="h-10 border-b bg-secondary-2/10 px-4 flex items-center">
-                    <Skeleton className="h-4 w-full bg-primary/20" />
-                  </div>
-                  {Array(5)
-                    .fill(0)
-                    .map((_, i) => (
-                      <div key={i} className="p-4 border-b last:border-0 flex flex-col gap-2">
-                        <div className="flex justify-between">
-                          <Skeleton className="h-4 w-[120px]  bg-primary/20" />
-                          <Skeleton className="h-4 w-[80px]  bg-primary/20" />
-                        </div>
-                        <Skeleton className="h-4 w-[200px]  bg-primary/20" />
-                      </div>
-                    ))}
-                </div>
-              ) : (
-                <RecentTransactionsTable />
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="col-span-full lg:col-span-3">
-            <CardHeader>
-              <div className="flex items-center">
-                <CardTitle className="font-heading">Top Routes</CardTitle>
-              </div>
-              <CardDescription>Most popular routes by ticket sales</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="rounded-md border border-secondary-2/30">
-                  <div className="h-10 border-b bg-secondary-2/10 px-4 flex items-center">
-                    <Skeleton className="h-4 w-full bg-primary/20" />
-                  </div>
-                  {Array(5)
-                    .fill(0)
-                    .map((_, i) => (
-                      <div key={i} className="p-4 border-b last:border-0 flex justify-between items-center">
-                        <Skeleton className="h-4 w-[180px] bg-primary/20" />
-                        <Skeleton className="h-4 w-[40px] bg-primary/20" />
-                      </div>
-                    ))}
-                </div>
-              ) : (
-                <TopRoutesTable routes={analyticsData?.topRoutes || []} />
               )}
             </CardContent>
           </Card>
