@@ -13,7 +13,6 @@ import { getAnalyticsData } from "@/lib/trips-service"
 import { formatCurrency } from "@/lib/utils"
 import { RevenueChart } from "@/components/revenue-chart"
 import { PaymentMethodChart } from "@/components/payment-method-chart"
-import { TopRoutesTable } from "@/components/top-routes-table"
 
 export default function AnalyticsPage() {
   const [isLoading, setIsLoading] = useState(true)
@@ -56,7 +55,6 @@ export default function AnalyticsPage() {
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="w-fit bg-primary text-white">
           <TabsTrigger value="revenue">Revenue</TabsTrigger>
-          <TabsTrigger value="routes">Routes</TabsTrigger>
           <TabsTrigger value="payment">Payment Methods</TabsTrigger>
         </TabsList>
 
@@ -140,71 +138,6 @@ export default function AnalyticsPage() {
               </CardContent>
             </Card>
           </div>
-        </TabsContent>
-
-        <TabsContent value="routes" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Top Routes</CardTitle>
-              <CardDescription>Most popular routes by ticket sales</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="flex justify-center items-center h-[300px]">
-                  <Loader2 className="h-8 w-8 animate-spin text-emerald-400" />
-                </div>
-              ) : (
-                <TopRoutesTable routes={analyticsData?.topRoutes || []} />
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Top Buses</CardTitle>
-              <CardDescription>Most active buses by ticket sales</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="flex justify-center items-center h-[300px]">
-                  <Loader2 className="h-8 w-8 animate-spin text-emerald-400" />
-                </div>
-              ) : (
-                <div className="rounded-md border overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="bg-primary hover:bg-primary/50 text-white">
-                        <th className="h-10 px-4 text-left align-middle font-medium text-muted-foreground">
-                          Bus Number
-                        </th>
-                        <th className="h-10 px-4 text-right align-middle font-medium text-muted-foreground">Tickets</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(analyticsData?.topBuses || []).length === 0 ? (
-                        <tr>
-                          <td colSpan={2} className="text-center py-6 text-muted-foreground">
-                            No bus data available
-                          </td>
-                        </tr>
-                      ) : (
-                        (analyticsData?.topBuses || []).map((bus: any, index: number) => (
-                          <tr key={index} className="border-b">
-                            <td className="p-4 align-middle">{bus.busNumber}</td>
-                            <td className="p-4 align-middle text-right">
-                              <span className="inline-flex items-center rounded-md border px-2.5 py-0.5 text-xs font-semibold border-primary hover:bg-primary/90">
-                                {bus.count}
-                              </span>
-                            </td>
-                          </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
         </TabsContent>
 
         <TabsContent value="payment" className="space-y-4">
