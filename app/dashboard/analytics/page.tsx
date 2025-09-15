@@ -10,16 +10,25 @@ import { DatePickerWithRange } from "@/components/date-picker-with-range"
 import type { DateRange } from "react-day-picker"
 import { format, subDays } from "date-fns"
 import { Download, Loader2 } from "lucide-react"
-import { getAnalyticsData, getAllTrips } from "@/lib/trips-service"
+import { getAnalyticsData } from "@/lib/trips-service"
 import { formatCurrency } from "@/lib/utils"
 import { RevenueChart } from "@/components/revenue-chart"
 import { PaymentMethodChart } from "@/components/payment-method-chart"
+
+/**
+ * EXPORT SCOPE (strictly what's on this page):
+ * - Summary Metrics (Total Revenue, QR Payments, Cash Payments, Total Tickets)
+ * - Revenue Trends (tabular version of the chart)
+ * - Payment Distribution (QR vs Cash, with percentages)
+ * Notes:
+ * - Export uses explicit "PHP" currency format as requested.
+ * - Removed any sections not shown on this page (e.g., Top Routes, Recent Transactions).
+ */
 
 export default function AnalyticsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isExporting, setIsExporting] = useState(false)
   const [analyticsData, setAnalyticsData] = useState<any>(null)
-  const [recentTransactions, setRecentTransactions] = useState<any[]>([])
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: subDays(new Date(), 30),
     to: new Date(),
@@ -31,10 +40,6 @@ export default function AnalyticsPage() {
     try {
       const data = await getAnalyticsData(dateRange?.from, dateRange?.to)
       setAnalyticsData(data)
-
-      // also fetch some recent transactions for the export
-      const trips = await getAllTrips()
-      setRecentTransactions(trips.slice(0, 10))
     } catch (error) {
       console.error("Error fetching analytics data:", error)
     } finally {
@@ -46,14 +51,14 @@ export default function AnalyticsPage() {
     fetchData()
   }, [fetchData])
 
-  // Peso currency formatter used in the PDF (kept local to avoid importing utils into the PDF context)
-  const formatPesoCurrency = (amount: any) => {
-    const numAmount = typeof amount === "number" ? amount : Number.parseFloat(amount || 0)
-    if (isNaN(numAmount)) return "PHP 0.00"
-    return `PHP ${numAmount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`
+  // Explicit "PHP" currency formatter for the PDF export
+  const formatPHP = (amount: any) => {
+    const n = typeof amount === "number" ? amount : Number.parseFloat(amount || 0)
+    if (Number.isNaN(n)) return "PHP 0.00"
+    return `PHP ${n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`
   }
 
-  // Export PDF (mirrors dashboard/page.tsx with Analytics-focused titling)
+  // Export PDF using ONLY data visible on this page
   const handleExport = async () => {
     if (!analyticsData || isExporting) return
 
@@ -70,42 +75,35 @@ export default function AnalyticsPage() {
       // Title
       doc.setFontSize(20)
       doc.text("Analytics Report", 105, 15, { align: "center" })
-
       doc.setFontSize(12)
       doc.text(`Date Range: ${dateFrom} to ${dateTo}`, 105, 25, { align: "center" })
 
-      // Summary Metrics
+      // Summary Metrics (mirror the "Revenue Summary" card)
       doc.setFontSize(16)
       doc.text("Summary Metrics", 14, 40)
-
       autoTable(doc, {
         startY: 45,
         head: [["Metric", "Value"]],
         body: [
-          ["Total Revenue", formatPesoCurrency(analyticsData?.totalRevenue || 0)],
-          ["Tickets Sold", analyticsData?.totalTrips || 0],
-          ["QR Payments", formatPesoCurrency(analyticsData?.qrRevenue || 0)],
-          ["Cash Payments", formatPesoCurrency(analyticsData?.cashRevenue || 0)],
+          ["Total Revenue", formatPHP(analyticsData?.totalRevenue || 0)],
+          ["QR Payments", formatPHP(analyticsData?.qrRevenue || 0)],
+          ["Cash Payments", formatPHP(analyticsData?.cashRevenue || 0)],
+          ["Total Tickets", String(analyticsData?.totalTrips || 0)],
         ],
         theme: "grid",
         headStyles: { fillColor: [34, 51, 102], textColor: 255 },
-        styles: {
-          fontSize: 10,
-          cellPadding: 3,
-          overflow: "linebreak",
-          cellWidth: "wrap",
-        },
+        styles: { fontSize: 10, cellPadding: 3, overflow: "linebreak", cellWidth: "wrap" },
       })
 
-      // Daily Revenue
+      // Revenue Trends (tabular version of the chart)
       const afterSummaryY = (doc as any).lastAutoTable.finalY
       if (analyticsData?.dailyRevenueData?.length) {
         doc.setFontSize(16)
-        doc.text("Daily Revenue", 14, afterSummaryY + 15)
+        doc.text("Revenue Trends", 14, afterSummaryY + 15)
 
         const dailyRows = analyticsData.dailyRevenueData.map((item: any) => [
           format(new Date(item.date), "MM/dd/yyyy"),
-          formatPesoCurrency(item.amount || 0),
+          formatPHP(item.amount || 0),
         ])
 
         autoTable(doc, {
@@ -114,91 +112,33 @@ export default function AnalyticsPage() {
           body: dailyRows,
           theme: "grid",
           headStyles: { fillColor: [34, 51, 102], textColor: 255 },
-          styles: {
-            fontSize: 10,
-            cellPadding: 3,
-            overflow: "linebreak",
-            cellWidth: "wrap",
-          },
+          styles: { fontSize: 10, cellPadding: 3, overflow: "linebreak", cellWidth: "wrap" },
         })
       }
 
-      // Top Routes
-      const afterDailyY = (doc as any).lastAutoTable?.finalY || afterSummaryY
-      if (analyticsData?.topRoutes?.length) {
-        if (afterDailyY > 220) {
-          doc.addPage()
-          doc.setFontSize(16)
-          doc.text("Top Routes", 14, 20)
-        } else {
-          doc.setFontSize(16)
-          doc.text("Top Routes", 14, afterDailyY + 15)
-        }
+      // Payment Distribution (QR vs Cash) — mirrors chart + percentages in cards
+      const afterTrendsY = (doc as any).lastAutoTable?.finalY || afterSummaryY
+      const totalRevenue = Number(analyticsData?.totalRevenue || 0)
+      {
+        const startY = afterTrendsY > 220 ? (doc.addPage(), 25) : afterTrendsY + 20
+        doc.setFontSize(16)
+        doc.text("Payment Distribution", 14, startY - 5)
 
-        const topRoutesRows = analyticsData.topRoutes.map((route: any) => {
-          const routeName =
-            typeof route.route === "string" ? route.route.replace(/\bp\b/g, "to") : route.route
-          return [
-            { content: routeName, styles: { cellWidth: "auto", halign: "left", fontSize: 7 } },
-            { content: route.count, styles: { cellWidth: 30, halign: "center" } },
-          ]
-        })
+        const qr = Number(analyticsData?.qrRevenue || 0)
+        const cash = Number(analyticsData?.cashRevenue || 0)
+        const pct = (val: number) => (totalRevenue > 0 ? `${Math.round((val / totalRevenue) * 100)}%` : "0%")
 
         autoTable(doc, {
-          startY: afterDailyY > 220 ? 25 : afterDailyY + 20,
-          head: [
-            [
-              { content: "Route", styles: { halign: "left" } },
-              { content: "Tickets", styles: { halign: "center" } },
-            ],
+          startY,
+          head: [["Method", "Amount", "Share"]],
+          body: [
+            ["QR", formatPHP(qr), pct(qr)],
+            ["Cash", formatPHP(cash), pct(cash)],
+            [{ content: "Total", styles: { fontStyle: "bold" } }, formatPHP(totalRevenue), "100%"],
           ],
-          body: topRoutesRows,
           theme: "grid",
           headStyles: { fillColor: [34, 51, 102], textColor: 255 },
           styles: { fontSize: 10, cellPadding: 3, overflow: "linebreak" },
-          columnStyles: { 0: { cellWidth: "auto" }, 1: { cellWidth: 30 } },
-          margin: { left: 14, right: 14 },
-        })
-      }
-
-      // Recent Transactions
-      const afterRoutesY = (doc as any).lastAutoTable?.finalY || afterDailyY
-      if (recentTransactions?.length) {
-        if (afterRoutesY > 180) {
-          doc.addPage()
-          doc.setFontSize(16)
-          doc.text("Recent Transactions", 14, 20)
-        } else {
-          doc.setFontSize(16)
-          doc.text("Recent Transactions", 14, afterRoutesY + 15)
-        }
-
-        const txRows = recentTransactions.map((tx: any) => {
-          const fareValue =
-            typeof tx.fare === "string" ? Number.parseFloat(tx.fare.replace(/[^\d.-]/g, "")) : tx.fare
-          return [
-            format(new Date(tx.timestamp), "MM/dd/yyyy"),
-            tx.passengerName,
-            `${tx.from} to ${tx.to}`.replace(/\bp\b/g, "to"),
-            tx.paymentMethod,
-            formatPesoCurrency(fareValue),
-          ]
-        })
-
-        autoTable(doc, {
-          startY: afterRoutesY > 180 ? 25 : afterRoutesY + 20,
-          head: [["Date", "Passenger", "Route", "Payment", "Fare"]],
-          body: txRows,
-          theme: "grid",
-          headStyles: { fillColor: [34, 51, 102], textColor: 255 },
-          styles: { fontSize: 9, cellPadding: 3, overflow: "linebreak", cellWidth: "wrap" },
-          columnStyles: {
-            0: { cellWidth: 25 },
-            1: { cellWidth: 35 },
-            2: { cellWidth: 70 },
-            3: { cellWidth: 25 },
-            4: { cellWidth: 25 },
-          },
         })
       }
 
@@ -295,7 +235,9 @@ export default function AnalyticsPage() {
                   <div className="space-y-4">
                     <div className="flex justify-between items-center border-b pb-2">
                       <span className="font-medium">Total Revenue</span>
-                      <span className="font-bold text-lg">{formatCurrency(analyticsData?.totalRevenue || 0)}</span>
+                      <span className="font-bold text-lg">
+                        {formatCurrency(analyticsData?.totalRevenue || 0)}
+                      </span>
                     </div>
                     <div className="flex justify-between items-center border-b pb-2">
                       <span className="font-medium">QR Payments</span>
