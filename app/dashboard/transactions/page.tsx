@@ -1,3 +1,4 @@
+// app/dashboard/transactions/page.tsx
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
@@ -10,7 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { DatePickerWithRange } from "@/components/date-picker-with-range"
 import type { DateRange } from "react-day-picker"
-import { subDays } from "date-fns"
+import { format, subDays } from "date-fns"
 import { Search, Download, Loader2, QrCode, Banknote } from "lucide-react"
 import { getAllTrips, getTripsByDateRange } from "@/lib/trips-service"
 import { formatDate } from "@/lib/utils"
@@ -21,6 +22,7 @@ export default function TransactionsPage() {
   const [filteredTrips, setFilteredTrips] = useState<any[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [isLoading, setIsLoading] = useState(true)
+  const [isExporting, setIsExporting] = useState(false)
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: subDays(new Date(), 30),
     to: new Date(),
@@ -46,7 +48,8 @@ export default function TransactionsPage() {
 
   useEffect(() => {
     fetchTrips()
-  }, [dateRange]) // eslint-disable-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dateRange])
 
   useEffect(() => {
     if (searchQuery.trim() === "") {
@@ -59,52 +62,196 @@ export default function TransactionsPage() {
           trip.from.toLowerCase().includes(query) ||
           trip.to.toLowerCase().includes(query) ||
           (trip.busNumber && trip.busNumber.toLowerCase().includes(query)) ||
-          trip.transactionId.includes(query),
+          (trip.transactionId && String(trip.transactionId).toLowerCase().includes(query)),
       )
       setFilteredTrips(filtered)
     }
   }, [searchQuery, trips])
 
-  const handleExport = () => {
-    // Create CSV content
-    const headers = ["Date", "Passenger", "From", "To", "Bus #", "Payment Method", "Fare", "Transaction ID"]
-    const csvContent = [
-      headers.join(","),
-      ...filteredTrips.map((trip) =>
-        [
-          formatDate(trip.timestamp),
-          trip.passengerName,
-          trip.from,
-          trip.to,
-          trip.busNumber || "N/A",
-          trip.paymentMethod,
-          trip.fare,
-          trip.transactionId,
-        ].join(","),
-      ),
-    ].join("\n")
+  // --- Helpers for PDF (mirrors dashboard export style) ---
+  const safeFareNumber = (fare: any) => {
+    if (typeof fare === "number") return fare
+    if (typeof fare === "string") {
+      const num = Number.parseFloat(fare.replace(/[^\d.-]/g, ""))
+      return Number.isFinite(num) ? num : 0
+    }
+    return 0
+  }
 
-    // Create download link
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement("a")
-    link.setAttribute("href", url)
-    link.setAttribute("download", `transactions-export-${new Date().toISOString().split("T")[0]}.csv`)
-    link.style.visibility = "hidden"
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+  const formatPesoCurrency = (amount: any) => {
+    const numAmount = typeof amount === "number" ? amount : Number.parseFloat(amount || 0)
+    if (isNaN(numAmount)) return "PHP 0.00"
+    return `PHP ${numAmount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`
+  }
+
+  const computeSummary = (rows: any[]) => {
+    const totals = {
+      count: rows.length,
+      revenue: 0,
+      byMethod: {} as Record<string, { count: number; revenue: number }>,
+    }
+    for (const r of rows) {
+      const amt = safeFareNumber(r.fare)
+      totals.revenue += amt
+      const method = (r.paymentMethod || "Unknown").toString()
+      if (!totals.byMethod[method]) totals.byMethod[method] = { count: 0, revenue: 0 }
+      totals.byMethod[method].count += 1
+      totals.byMethod[method].revenue += amt
+    }
+    return totals
+  }
+
+  const handleExport = async () => {
+    if (isExporting) return
+    setIsExporting(true)
+    try {
+      // Dynamic imports to avoid SSR issues – same pattern as dashboard
+      const { jsPDF } = await import("jspdf")
+      const autoTable = (await import("jspdf-autotable")).default
+
+      const doc = new jsPDF()
+
+      const dateFrom = dateRange?.from ? format(dateRange.from, "MMM dd, yyyy") : ""
+      const dateTo = dateRange?.to ? format(dateRange.to, "MMM dd, yyyy") : ""
+
+      // Title
+      doc.setFontSize(20)
+      doc.text("Transactions Report", 105, 15, { align: "center" })
+
+      // Date range
+      doc.setFontSize(12)
+      doc.text(`Date Range: ${dateFrom} to ${dateTo}`, 105, 25, { align: "center" })
+
+      // Summary section
+      const summary = computeSummary(filteredTrips)
+      const methods = Object.entries(summary.byMethod).map(([m, v]) => [
+        m,
+        v.count,
+        formatPesoCurrency(v.revenue),
+      ])
+
+      doc.setFontSize(16)
+      doc.text("Summary", 14, 40)
+
+      autoTable(doc, {
+        startY: 45,
+        head: [["Metric", "Value"]],
+        body: [
+          ["Total Transactions", summary.count],
+          ["Total Revenue", formatPesoCurrency(summary.revenue)],
+        ],
+        theme: "grid",
+        headStyles: { fillColor: [34, 51, 102], textColor: 255 },
+        styles: { fontSize: 10, cellPadding: 3, overflow: "linebreak", cellWidth: "wrap" },
+      })
+
+      let y = (doc as any).lastAutoTable.finalY
+
+      if (methods.length > 0) {
+        doc.setFontSize(14)
+        doc.text("By Payment Method", 14, y + 12)
+
+        autoTable(doc, {
+          startY: y + 17,
+          head: [["Method", "Count", "Revenue"]],
+          body: methods,
+          theme: "grid",
+          headStyles: { fillColor: [34, 51, 102], textColor: 255 },
+          styles: { fontSize: 10, cellPadding: 3, overflow: "linebreak" },
+          columnStyles: { 0: { cellWidth: 50 }, 1: { cellWidth: 25 }, 2: { cellWidth: 40 } },
+          margin: { left: 14, right: 14 },
+        })
+
+        y = (doc as any).lastAutoTable.finalY
+      }
+
+      // Transactions table
+      doc.setFontSize(16)
+      if (y > 180) {
+        doc.addPage()
+        doc.text("Transactions", 14, 20)
+      } else {
+        doc.text("Transactions", 14, y + 15)
+      }
+
+      const rows = filteredTrips.map((t) => {
+        const fareVal = safeFareNumber(t.fare)
+        const dateStr = t.timestamp ? format(new Date(t.timestamp), "MM/dd/yyyy") : ""
+        const passenger = t.passengerName || ""
+        const route = `${t.from || ""} to ${t.to || ""}`.replace(/\bp\b/g, "to")
+        const busNo = t.busNumber || "N/A"
+        const method = t.paymentMethod || ""
+        const fare = formatPesoCurrency(fareVal)
+        const txid = t.transactionId || ""
+        return [dateStr, passenger, route, busNo, method, fare, txid]
+      })
+
+      autoTable(doc, {
+        startY: y > 180 ? 25 : y + 20,
+        head: [["Date", "Passenger", "Route", "Bus #", "Payment", "Fare", "Transaction ID"]],
+        body: rows,
+        theme: "grid",
+        headStyles: { fillColor: [34, 51, 102], textColor: 255 },
+        styles: {
+          fontSize: 9,
+          cellPadding: 3,
+          overflow: "linebreak",
+          cellWidth: "wrap",
+        },
+        columnStyles: {
+          0: { cellWidth: 22 },
+          1: { cellWidth: 32 },
+          2: { cellWidth: 62 },
+          3: { cellWidth: 16 },
+          4: { cellWidth: 22 },
+          5: { cellWidth: 24 },
+          6: { cellWidth: 40 },
+        },
+        margin: { left: 14, right: 14 },
+      })
+
+      // Footer with timestamp + page numbers
+      const pageCount = doc.getNumberOfPages()
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i)
+        doc.setFontSize(8)
+        doc.text(
+          `Generated on ${format(new Date(), "MMM dd, yyyy 'at' h:mm a")} - Page ${i} of ${pageCount}`,
+          105,
+          doc.internal.pageSize.height - 10,
+          { align: "center" },
+        )
+      }
+
+      doc.save(`transactions-report-${format(new Date(), "yyyy-MM-dd")}.pdf`)
+    } catch (err) {
+      console.error("Error generating transactions PDF:", err)
+      alert("Failed to generate PDF. See console for details.")
+    } finally {
+      setIsExporting(false)
+    }
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 font-body">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Transactions</h1>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight font-heading">Transactions</h1>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 w-full sm:w-auto">
           <DatePickerWithRange date={dateRange} onDateChange={setDateRange} />
-          <Button variant="outline" size="sm" onClick={handleExport} className="w-full sm:w-auto">
-            <Download className="mr-2 h-4 w-4" />
-            <span>Export</span>
+          <Button
+            variant="default"
+            size="sm"
+            className="w-full sm:w-auto text-white"
+            onClick={handleExport}
+            disabled={isLoading || isExporting || filteredTrips.length === 0}
+            aria-busy={isExporting}
+          >
+            {isExporting ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="mr-2 h-4 w-4" />
+            )}
+            <span>{isExporting ? "Exporting…" : "Export PDF"}</span>
           </Button>
         </div>
       </div>
@@ -155,15 +302,20 @@ export default function TransactionsPage() {
                       </TableRow>
                     ) : (
                       filteredTrips.map((trip) => (
-                        <TableRow key={trip.id} className="hover:primary/30">
+                        <TableRow key={trip.id} className="hover:bg-primary/30">
                           <TableCell>{formatDate(trip.timestamp)}</TableCell>
-                          <TableCell className="font-medium truncate max-w-[120px]">{trip.passengerName}</TableCell>
+                          <TableCell className="font-medium truncate max-w-[120px]">
+                            {trip.passengerName}
+                          </TableCell>
                           <TableCell className="truncate max-w-[150px]">
                             {trip.from} → {trip.to}
                           </TableCell>
                           <TableCell>{trip.busNumber || "N/A"}</TableCell>
                           <TableCell>
-                            <Badge variant={trip.paymentMethod === "QR" ? "default" : "outline"} className="bg-primary border-primary hover:bg-primary/90 text-white">
+                            <Badge
+                              variant={trip.paymentMethod === "QR" ? "default" : "outline"}
+                              className="bg-primary border-primary hover:bg-primary/90 text-white"
+                            >
                               {trip.paymentMethod === "QR" ? (
                                 <QrCode className="mr-1 h-3 w-3" />
                               ) : (
@@ -190,4 +342,3 @@ export default function TransactionsPage() {
     </div>
   )
 }
-
