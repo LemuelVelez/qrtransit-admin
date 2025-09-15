@@ -18,7 +18,7 @@ import {
   CreditCard,
   Loader2,
 } from "lucide-react"
-import { getAnalyticsData, getAllTrips } from "@/lib/trips-service"
+import { getAnalyticsData } from "@/lib/trips-service"
 import { formatCurrency } from "@/lib/utils"
 import { RevenueChart } from "@/components/revenue-chart"
 import { PaymentMethodChart } from "@/components/payment-method-chart"
@@ -32,17 +32,12 @@ export default function DashboardPage() {
     from: subDays(new Date(), 30),
     to: new Date(),
   })
-  const [recentTransactions, setRecentTransactions] = useState<any[]>([])
 
   const fetchData = useCallback(async () => {
     setIsLoading(true)
     try {
       const data = await getAnalyticsData(dateRange?.from, dateRange?.to)
       setAnalyticsData(data)
-
-      // Also fetch recent transactions for the export
-      const trips = await getAllTrips()
-      setRecentTransactions(trips.slice(0, 10)) // Get top 10 for export
     } catch (error) {
       console.error("Error fetching analytics data:", error)
     } finally {
@@ -54,14 +49,14 @@ export default function DashboardPage() {
     fetchData()
   }, [fetchData])
 
-  // Function to format currency with peso sign for PDF
+  // Currency formatter for PDF with PHP prefix
   const formatPesoCurrency = (amount: any) => {
     const numAmount = typeof amount === "number" ? amount : Number.parseFloat(amount || 0)
     if (isNaN(numAmount)) return "PHP 0.00"
     return `PHP ${numAmount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`
   }
 
-  // Function to format percentage change
+  // Format percentage change for stat captions
   const formatPercentageChange = (change: number | undefined) => {
     if (change === undefined) return { value: "0%", isPositive: true }
     const isPositive = change >= 0
@@ -69,182 +64,104 @@ export default function DashboardPage() {
     return { value: formattedValue, isPositive }
   }
 
-  // Function to export dashboard data as PDF
+  // Export ONLY what this page shows (Summary, Revenue, Payment Methods)
   const handleExport = async () => {
     if (!analyticsData || isExporting) return
 
     setIsExporting(true)
     try {
-      // Import jsPDF and jspdf-autotable in a way that ensures proper initialization
       const { jsPDF } = await import("jspdf")
       const autoTable = (await import("jspdf-autotable")).default
 
-      // Create a new PDF document
       const doc = new jsPDF()
 
-      // Set document properties
       const dateFrom = dateRange?.from ? format(dateRange.from, "MMM dd, yyyy") : ""
       const dateTo = dateRange?.to ? format(dateRange.to, "MMM dd, yyyy") : ""
 
-      // Add title and date range
+      // Header
       doc.setFontSize(20)
       doc.text("Dashboard Report", 105, 15, { align: "center" })
-
       doc.setFontSize(12)
       doc.text(`Date Range: ${dateFrom} to ${dateTo}`, 105, 25, { align: "center" })
 
-      // Add summary metrics section
+      // Summary Metrics (the four stat cards)
       doc.setFontSize(16)
       doc.text("Summary Metrics", 14, 40)
 
-      // Create summary metrics table
       autoTable(doc, {
         startY: 45,
         head: [["Metric", "Value"]],
         body: [
-          ["Total Revenue", formatPesoCurrency(analyticsData.totalRevenue || 0)],
-          ["Tickets Sold", analyticsData.totalTrips || 0],
-          ["QR Payments", formatPesoCurrency(analyticsData.qrRevenue || 0)],
-          ["Cash Payments", formatPesoCurrency(analyticsData.cashRevenue || 0)],
+          ["Total Revenue", formatPesoCurrency(analyticsData?.totalRevenue || 0)],
+          ["Tickets Sold", analyticsData?.totalTrips || 0],
+          ["QR Payments", formatPesoCurrency(analyticsData?.qrRevenue || 0)],
+          ["Cash Payments", formatPesoCurrency(analyticsData?.cashRevenue || 0)],
         ],
         theme: "grid",
         headStyles: { fillColor: [34, 51, 102], textColor: 255 },
-        styles: {
-          fontSize: 10,
-          cellPadding: 3,
-          overflow: "linebreak",
-          cellWidth: "wrap",
-        },
+        styles: { fontSize: 10, cellPadding: 3, overflow: "linebreak", cellWidth: "wrap" },
+        margin: { left: 14, right: 14 },
       })
 
-      // Get the Y position after the first table
-      const firstTableEndY = (doc as any).lastAutoTable.finalY
+      let currentY = (doc as any).lastAutoTable.finalY || 60
 
-      // Add daily revenue section
-      if (analyticsData.dailyRevenueData && analyticsData.dailyRevenueData.length > 0) {
+      // Revenue (what the Revenue Overview chart displays)
+      if (analyticsData?.dailyRevenueData?.length) {
+        if (currentY > 220) {
+          doc.addPage()
+          currentY = 20
+        }
         doc.setFontSize(16)
-        doc.text("Daily Revenue", 14, firstTableEndY + 15)
+        doc.text("Revenue Overview", 14, currentY + 15)
 
-        const dailyRevenueData = analyticsData.dailyRevenueData.map((item: any) => [
+        const dailyRows = analyticsData.dailyRevenueData.map((item: any) => [
           format(new Date(item.date), "MM/dd/yyyy"),
           formatPesoCurrency(item.amount || 0),
         ])
 
         autoTable(doc, {
-          startY: firstTableEndY + 20,
+          startY: currentY + 20,
           head: [["Date", "Revenue"]],
-          body: dailyRevenueData,
+          body: dailyRows,
           theme: "grid",
           headStyles: { fillColor: [34, 51, 102], textColor: 255 },
-          styles: {
-            fontSize: 10,
-            cellPadding: 3,
-            overflow: "linebreak",
-            cellWidth: "wrap",
-          },
+          styles: { fontSize: 10, cellPadding: 3, overflow: "linebreak", cellWidth: "wrap" },
+          margin: { left: 14, right: 14 },
         })
+
+        currentY = (doc as any).lastAutoTable.finalY || currentY + 20
       }
 
-      // Get the Y position after the second table
-      const secondTableEndY = (doc as any).lastAutoTable.finalY
+      // Payment Methods (what the donut/pie shows)
+      {
+        const qr = Number(analyticsData?.qrRevenue || 0)
+        const cash = Number(analyticsData?.cashRevenue || 0)
+        const total = qr + cash
+        const qrPct = total > 0 ? `${((qr / total) * 100).toFixed(1)}%` : "0.0%"
+        const cashPct = total > 0 ? `${((cash / total) * 100).toFixed(1)}%` : "0.0%"
 
-      // Add top routes section - MODIFIED FOR VERTICAL LAYOUT
-      if (analyticsData.topRoutes && analyticsData.topRoutes.length > 0) {
-        if (secondTableEndY > 220) {
+        if (currentY > 220) {
           doc.addPage()
-          doc.setFontSize(16)
-          doc.text("Top Routes", 14, 20)
-        } else {
-          doc.setFontSize(16)
-          doc.text("Top Routes", 14, secondTableEndY + 15)
+          currentY = 20
         }
-
-        const topRoutesData = analyticsData.topRoutes.map((route: any) => {
-          const routeName =
-            typeof route.route === "string" ? route.route.replace(/\bp\b/g, "to") : route.route
-
-          return [
-            { content: routeName, styles: { cellWidth: "auto", halign: "left", fontSize: 7 } },
-            { content: route.count, styles: { cellWidth: 30, halign: "center" } },
-          ]
-        })
+        doc.setFontSize(16)
+        doc.text("Payment Methods", 14, currentY + 15)
 
         autoTable(doc, {
-          startY: secondTableEndY > 220 ? 25 : secondTableEndY + 20,
-          head: [
-            [
-              { content: "Route", styles: { halign: "left" } },
-              { content: "Tickets", styles: { halign: "center" } },
-            ],
+          startY: currentY + 20,
+          head: [["Method", "Amount", "Share"]],
+          body: [
+            ["QR", formatPesoCurrency(qr), qrPct],
+            ["Cash", formatPesoCurrency(cash), cashPct],
           ],
-          body: topRoutesData,
           theme: "grid",
           headStyles: { fillColor: [34, 51, 102], textColor: 255 },
-          styles: {
-            fontSize: 10,
-            cellPadding: 3,
-            overflow: "linebreak",
-          },
-          columnStyles: {
-            0: { cellWidth: "auto" },
-            1: { cellWidth: 30 },
-          },
+          styles: { fontSize: 10, cellPadding: 3 },
           margin: { left: 14, right: 14 },
         })
       }
 
-      // Get the Y position after the third table
-      const thirdTableEndY = (doc as any).lastAutoTable.finalY
-
-      // Add recent transactions section
-      if (recentTransactions && recentTransactions.length > 0) {
-        if (thirdTableEndY > 180) {
-          doc.addPage()
-          doc.setFontSize(16)
-          doc.text("Recent Transactions", 14, 20)
-        } else {
-          doc.setFontSize(16)
-          doc.text("Recent Transactions", 14, thirdTableEndY + 15)
-        }
-
-        const transactionsData = recentTransactions.map((transaction: any) => {
-          const fareValue =
-            typeof transaction.fare === "string"
-              ? Number.parseFloat(transaction.fare.replace(/[^\d.-]/g, ""))
-              : transaction.fare
-
-          return [
-            format(new Date(transaction.timestamp), "MM/dd/yyyy"),
-            transaction.passengerName,
-            `${transaction.from} to ${transaction.to}`.replace(/\bp\b/g, "to"),
-            transaction.paymentMethod,
-            formatPesoCurrency(fareValue),
-          ]
-        })
-
-        autoTable(doc, {
-          startY: thirdTableEndY > 180 ? 25 : thirdTableEndY + 20,
-          head: [["Date", "Passenger", "Route", "Payment", "Fare"]],
-          body: transactionsData,
-          theme: "grid",
-          headStyles: { fillColor: [34, 51, 102], textColor: 255 },
-          styles: {
-            fontSize: 9,
-            cellPadding: 3,
-            overflow: "linebreak",
-            cellWidth: "wrap",
-          },
-          columnStyles: {
-            0: { cellWidth: 25 },
-            1: { cellWidth: 35 },
-            2: { cellWidth: 70 },
-            3: { cellWidth: 25 },
-            4: { cellWidth: 25 },
-          },
-        })
-      }
-
-      // Footer with generation date
+      // Footer
       const pageCount = doc.getNumberOfPages()
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i)
@@ -257,7 +174,6 @@ export default function DashboardPage() {
         )
       }
 
-      // Save the PDF
       doc.save(`dashboard-report-${format(new Date(), "yyyy-MM-dd")}.pdf`)
     } catch (error) {
       console.error("Error generating PDF:", error)
@@ -347,9 +263,7 @@ export default function DashboardPage() {
                   <Ticket className="h-4 w-4 text-primary" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">
-                    {analyticsData?.totalTrips || 0}
-                  </div>
+                  <div className="text-2xl font-bold">{analyticsData?.totalTrips || 0}</div>
                   {(() => {
                     const { value, isPositive } = formatPercentageChange(analyticsData?.tripsChange)
                     return (
