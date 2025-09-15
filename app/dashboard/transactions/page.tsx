@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { DatePickerWithRange } from "@/components/date-picker-with-range"
 import type { DateRange } from "react-day-picker"
-import { format, subDays } from "date-fns"
+import { subDays, format } from "date-fns"
 import { Search, Download, Loader2, QrCode, Banknote } from "lucide-react"
 import { getAllTrips, getTripsByDateRange } from "@/lib/trips-service"
 import { formatDate } from "@/lib/utils"
@@ -58,9 +58,9 @@ export default function TransactionsPage() {
       const query = searchQuery.toLowerCase()
       const filtered = trips.filter(
         (trip) =>
-          trip.passengerName.toLowerCase().includes(query) ||
-          trip.from.toLowerCase().includes(query) ||
-          trip.to.toLowerCase().includes(query) ||
+          (trip.passengerName || "").toLowerCase().includes(query) ||
+          (trip.from || "").toLowerCase().includes(query) ||
+          (trip.to || "").toLowerCase().includes(query) ||
           (trip.busNumber && trip.busNumber.toLowerCase().includes(query)) ||
           (trip.transactionId && String(trip.transactionId).toLowerCase().includes(query)),
       )
@@ -68,7 +68,7 @@ export default function TransactionsPage() {
     }
   }, [searchQuery, trips])
 
-  // --- Helpers for PDF (mirrors dashboard export style) ---
+  // ------- Helpers for PDF export & formatting -------
   const safeFareNumber = (fare: any) => {
     if (typeof fare === "number") return fare
     if (typeof fare === "string") {
@@ -78,150 +78,142 @@ export default function TransactionsPage() {
     return 0
   }
 
-  const formatPesoCurrency = (amount: any) => {
-    const numAmount = typeof amount === "number" ? amount : Number.parseFloat(amount || 0)
-    if (isNaN(numAmount)) return "PHP 0.00"
-    return `PHP ${numAmount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`
+  const formatPHP = (amount: any) => {
+    const n = typeof amount === "number" ? amount : Number.parseFloat(amount || 0)
+    if (Number.isNaN(n)) return "PHP 0.00"
+    return `PHP ${n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`
   }
 
-  const computeSummary = (rows: any[]) => {
-    const totals = {
-      count: rows.length,
-      revenue: 0,
-      byMethod: {} as Record<string, { count: number; revenue: number }>,
-    }
-    for (const r of rows) {
-      const amt = safeFareNumber(r.fare)
-      totals.revenue += amt
-      const method = (r.paymentMethod || "Unknown").toString()
-      if (!totals.byMethod[method]) totals.byMethod[method] = { count: 0, revenue: 0 }
-      totals.byMethod[method].count += 1
-      totals.byMethod[method].revenue += amt
-    }
-    return totals
+  // Normalize punctuation to avoid weird glyphs in PDF (e.g., "!’")
+  const normalizePunctuation = (s: string) =>
+    s
+      .replace(/[\u2018\u2019\u201A\u201B]/g, "'") // smart singles -> '
+      .replace(/[\u201C\u201D\u201E\u201F]/g, '"') // smart doubles -> "
+      .replace(/^\s*[¡!]['’‛"]?\s*/, "") // strip leading "!’" / "!’" / variants
+      .replace(/^\s+|\s+$/g, "")
+
+  // Insert zero-width spaces inside very long words so AutoTable can break them
+  const breakLongWords = (text: string, max = 18) =>
+    text.replace(new RegExp(`(\\S{${max}})(?=\\S)`, "g"), "$1\u200b")
+
+  // Shorten common trailing country to acronym for compact PDF layout
+  const abbreviateCountry = (text: string) =>
+    text.replace(/,\s*Philippines\b/gi, ", PH")
+
+  const preparePlaceForPdf = (place?: string) => {
+    const cleaned = normalizePunctuation(place || "")
+    const abbreviated = abbreviateCountry(cleaned)
+    // Force line breaks after commas; also add break points in long tokens
+    return breakLongWords(abbreviated).replace(/, /g, ",\n")
   }
 
+  // Route block for PDF: use plain words "From:" and "To:" (no special arrows)
+  const routeForPdf = (from?: string, to?: string) => {
+    const origin = preparePlaceForPdf(from)
+    const dest = preparePlaceForPdf(to)
+    return `From: ${origin}\nTo: ${dest}`
+  }
+
+  // --- Export: PHP currency; centered header; non-truncated Route; no special glyphs ---
   const handleExport = async () => {
     if (isExporting) return
     setIsExporting(true)
     try {
-      // Dynamic imports to avoid SSR issues – same pattern as dashboard
       const { jsPDF } = await import("jspdf")
       const autoTable = (await import("jspdf-autotable")).default
 
-      const doc = new jsPDF()
+      // If any route is long, give more room with landscape; otherwise portrait
+      const anyLongRoute = filteredTrips.some(
+        (t) => (`${t?.from || ""} ${t?.to || ""}`.length >= 40) || (String(t?.transactionId || "").length > 24),
+      )
+
+      const doc = new jsPDF({ orientation: anyLongRoute ? "landscape" : "portrait" })
+      const pageWidth = doc.internal.pageSize.getWidth() as number
+      const pageHeight = doc.internal.pageSize.getHeight() as number
 
       const dateFrom = dateRange?.from ? format(dateRange.from, "MMM dd, yyyy") : ""
       const dateTo = dateRange?.to ? format(dateRange.to, "MMM dd, yyyy") : ""
 
-      // Title
+      // Title (centered)
       doc.setFontSize(20)
-      doc.text("Transactions Report", 105, 15, { align: "center" })
-
-      // Date range
+      doc.text("Transactions Report", pageWidth / 2, 15, { align: "center" })
+      // Date range (centered)
       doc.setFontSize(12)
-      doc.text(`Date Range: ${dateFrom} to ${dateTo}`, 105, 25, { align: "center" })
+      doc.text(`Date Range: ${dateFrom} to ${dateTo}`, pageWidth / 2, 25, { align: "center" })
 
-      // Summary section
-      const summary = computeSummary(filteredTrips)
-      const methods = Object.entries(summary.byMethod).map(([m, v]) => [
-        m,
-        v.count,
-        formatPesoCurrency(v.revenue),
+      const rows = filteredTrips.map((t) => [
+        formatDate(t.timestamp) || "",
+        t.passengerName || "",
+        routeForPdf(t.from, t.to),
+        t.busNumber || "N/A",
+        t.paymentMethod || "",
+        formatPHP(safeFareNumber(t.fare)),
+        t.transactionId ?? "",
       ])
 
-      doc.setFontSize(16)
-      doc.text("Summary", 14, 40)
+      // Column widths (route gets generous width; others balanced). Landscape gets wider route.
+      const columnStyles = anyLongRoute
+        ? {
+          0: { cellWidth: 32 },  // Date
+          1: { cellWidth: 40 },  // Passenger
+          2: { cellWidth: 78 },  // Route (wide, wraps fully)
+          3: { cellWidth: 18 },  // Bus #
+          4: { cellWidth: 24 },  // Payment
+          5: { cellWidth: 28, halign: "right" }, // Fare (PHP)
+          6: { cellWidth: 52 },  // Transaction ID
+        }
+        : {
+          0: { cellWidth: 26 },
+          1: { cellWidth: 34 },
+          2: { cellWidth: 70 },  // Route (wide enough; wraps fully)
+          3: { cellWidth: 16 },
+          4: { cellWidth: 22 },
+          5: { cellWidth: 24, halign: "right" },
+          6: { cellWidth: 40 },
+        }
 
       autoTable(doc, {
-        startY: 45,
-        head: [["Metric", "Value"]],
-        body: [
-          ["Total Transactions", summary.count],
-          ["Total Revenue", formatPesoCurrency(summary.revenue)],
-        ],
-        theme: "grid",
-        headStyles: { fillColor: [34, 51, 102], textColor: 255 },
-        styles: { fontSize: 10, cellPadding: 3, overflow: "linebreak", cellWidth: "wrap" },
-      })
-
-      let y = (doc as any).lastAutoTable.finalY
-
-      if (methods.length > 0) {
-        doc.setFontSize(14)
-        doc.text("By Payment Method", 14, y + 12)
-
-        autoTable(doc, {
-          startY: y + 17,
-          head: [["Method", "Count", "Revenue"]],
-          body: methods,
-          theme: "grid",
-          headStyles: { fillColor: [34, 51, 102], textColor: 255 },
-          styles: { fontSize: 10, cellPadding: 3, overflow: "linebreak" },
-          columnStyles: { 0: { cellWidth: 50 }, 1: { cellWidth: 25 }, 2: { cellWidth: 40 } },
-          margin: { left: 14, right: 14 },
-        })
-
-        y = (doc as any).lastAutoTable.finalY
-      }
-
-      // Transactions table
-      doc.setFontSize(16)
-      if (y > 180) {
-        doc.addPage()
-        doc.text("Transactions", 14, 20)
-      } else {
-        doc.text("Transactions", 14, y + 15)
-      }
-
-      const rows = filteredTrips.map((t) => {
-        const fareVal = safeFareNumber(t.fare)
-        const dateStr = t.timestamp ? format(new Date(t.timestamp), "MM/dd/yyyy") : ""
-        const passenger = t.passengerName || ""
-        const route = `${t.from || ""} to ${t.to || ""}`.replace(/\bp\b/g, "to")
-        const busNo = t.busNumber || "N/A"
-        const method = t.paymentMethod || ""
-        const fare = formatPesoCurrency(fareVal)
-        const txid = t.transactionId || ""
-        return [dateStr, passenger, route, busNo, method, fare, txid]
-      })
-
-      autoTable(doc, {
-        startY: y > 180 ? 25 : y + 20,
+        startY: 35,
         head: [["Date", "Passenger", "Route", "Bus #", "Payment", "Fare", "Transaction ID"]],
         body: rows,
         theme: "grid",
+        tableWidth: "auto",
         headStyles: { fillColor: [34, 51, 102], textColor: 255 },
         styles: {
           fontSize: 9,
           cellPadding: 3,
           overflow: "linebreak",
           cellWidth: "wrap",
+          lineWidth: 0.1,
+          lineColor: 200,
+          minCellHeight: 8,
+          valign: "top",
         },
-        columnStyles: {
-          0: { cellWidth: 22 },
-          1: { cellWidth: 32 },
-          2: { cellWidth: 62 },
-          3: { cellWidth: 16 },
-          4: { cellWidth: 22 },
-          5: { cellWidth: 24 },
-          6: { cellWidth: 40 },
-        },
+        columnStyles,
         margin: { left: 14, right: 14 },
+        rowPageBreak: "auto",
+        avoidTableSplit: false,
+        // Downsize only the Route cell when extremely long to prevent truncation
+        didParseCell: (data: any) => {
+          if (data.section === "body" && data.column.index === 2) {
+            const txt = String(data.cell.raw || "")
+            if (txt.length > 300) data.cell.styles.fontSize = 7
+            else if (txt.length > 140) data.cell.styles.fontSize = 8
+          }
+        },
+        // Ensure footer doesn't overlap table
+        didDrawPage: (data: any) => {
+          doc.setFontSize(8)
+          const pageNumber = doc.getNumberOfPages()
+          const currentPage = data.pageNumber
+          doc.text(
+            `Generated on ${format(new Date(), "MMM dd, yyyy 'at' h:mm a")} - Page ${currentPage} of ${pageNumber}`,
+            pageWidth / 2,
+            pageHeight - 10,
+            { align: "center" },
+          )
+        },
       })
-
-      // Footer with timestamp + page numbers
-      const pageCount = doc.getNumberOfPages()
-      for (let i = 1; i <= pageCount; i++) {
-        doc.setPage(i)
-        doc.setFontSize(8)
-        doc.text(
-          `Generated on ${format(new Date(), "MMM dd, yyyy 'at' h:mm a")} - Page ${i} of ${pageCount}`,
-          105,
-          doc.internal.pageSize.height - 10,
-          { align: "center" },
-        )
-      }
 
       doc.save(`transactions-report-${format(new Date(), "yyyy-MM-dd")}.pdf`)
     } catch (err) {
@@ -286,10 +278,10 @@ export default function TransactionsPage() {
                     <TableRow className="hover:bg-primary/50">
                       <TableHead className="min-w-[100px]">Date</TableHead>
                       <TableHead className="min-w-[120px]">Passenger</TableHead>
-                      <TableHead className="min-w-[150px]">Route</TableHead>
+                      <TableHead className="min-w-[180px]">Route</TableHead>
                       <TableHead className="min-w-[80px]">Bus #</TableHead>
                       <TableHead className="min-w-[100px]">Payment</TableHead>
-                      <TableHead className="min-w-[80px] text-right">Fare</TableHead>
+                      <TableHead className="min-w-[100px] text-right">Fare</TableHead>
                       <TableHead className="min-w-[180px] hidden md:table-cell">Transaction ID</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -304,10 +296,11 @@ export default function TransactionsPage() {
                       filteredTrips.map((trip) => (
                         <TableRow key={trip.id} className="hover:bg-primary/30">
                           <TableCell>{formatDate(trip.timestamp)}</TableCell>
-                          <TableCell className="font-medium truncate max-w-[120px]">
+                          <TableCell className="font-medium truncate max-w-[160px]">
                             {trip.passengerName}
                           </TableCell>
-                          <TableCell className="truncate max-w-[150px]">
+                          <TableCell className="truncate max-w-[260px]">
+                            {/* UI keeps arrow; PDF uses "From/To" words */}
                             {trip.from} → {trip.to}
                           </TableCell>
                           <TableCell>{trip.busNumber || "N/A"}</TableCell>
@@ -324,8 +317,10 @@ export default function TransactionsPage() {
                               {trip.paymentMethod}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-right font-medium">{trip.fare}</TableCell>
-                          <TableCell className="font-mono text-xs truncate max-w-[180px] hidden md:table-cell">
+                          <TableCell className="text-right font-medium">
+                            {formatPHP(safeFareNumber(trip.fare))}
+                          </TableCell>
+                          <TableCell className="font-mono text-xs truncate max-w-[220px] hidden md:table-cell">
                             {trip.transactionId}
                           </TableCell>
                         </TableRow>
