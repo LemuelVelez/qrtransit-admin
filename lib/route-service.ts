@@ -230,3 +230,55 @@ export async function updateRouteStatus(
     return false;
   }
 }
+
+export async function getBusesByRoute(
+  from: string,
+  to: string
+): Promise<RouteInfo[]> {
+  try {
+    const databaseId = config.databaseId;
+    const collectionId = getRoutesCollectionId();
+
+    if (!databaseId || !collectionId) {
+      throw new Error("Appwrite configuration missing");
+    }
+
+    const response = await databases.listDocuments(databaseId, collectionId, [
+      Query.equal("from", from),
+      Query.equal("to", to),
+      Query.orderDesc("timestamp"),
+    ]);
+
+    const routes = response.documents.map((route) => ({
+      id: route.$id,
+      from: route.from,
+      to: route.to,
+      busNumber: route.busNumber,
+      timestamp: Number.parseInt(route.timestamp),
+      active: route.active === true,
+      conductorName: route.conductorName || "",
+      conductorId: route.conductorId,
+    }));
+
+    // Fetch conductor information for routes with missing conductor names
+    const routesWithConductors = await Promise.all(
+      routes.map(async (route) => {
+        if (!route.conductorName && route.conductorId) {
+          const conductorInfo = await getConductorById(route.conductorId);
+          if (conductorInfo) {
+            return {
+              ...route,
+              conductorName: conductorInfo.name,
+            };
+          }
+        }
+        return route;
+      })
+    );
+
+    return routesWithConductors;
+  } catch (error) {
+    console.error("Error getting buses by route:", error);
+    return [];
+  }
+}
