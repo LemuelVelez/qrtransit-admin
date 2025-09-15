@@ -41,7 +41,6 @@ import {
   Settings,
   BarChart3,
   QrCode,
-  FileText,
   LogOut,
   User,
   DollarSign,
@@ -123,12 +122,6 @@ export function DashboardLayout({ children, user }: { children: React.ReactNode;
                     icon={BarChart3}
                     label="Analytics"
                     isActive={pathname === "/dashboard/analytics"}
-                  />
-                  <CustomSidebarMenuButton
-                    href="/dashboard/reports"
-                    icon={FileText}
-                    label="Reports"
-                    isActive={pathname === "/dashboard/reports"}
                   />
                 </SidebarMenu>
               </SidebarGroupContent>
