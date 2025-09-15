@@ -1,3 +1,4 @@
+// app/dashboard/page.tsx
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
@@ -7,7 +8,16 @@ import { Button } from "@/components/ui/button"
 import { DatePickerWithRange } from "@/components/date-picker-with-range"
 import type { DateRange } from "react-day-picker"
 import { format, subDays } from "date-fns"
-import { Download, ArrowUp, ArrowDown, Bus, Users, Ticket, CreditCard } from "lucide-react"
+import {
+  Download,
+  ArrowUp,
+  ArrowDown,
+  Bus,
+  Users,
+  Ticket,
+  CreditCard,
+  Loader2,
+} from "lucide-react"
 import { getAnalyticsData, getAllTrips } from "@/lib/trips-service"
 import { formatCurrency } from "@/lib/utils"
 import { RevenueChart } from "@/components/revenue-chart"
@@ -16,6 +26,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true)
+  const [isExporting, setIsExporting] = useState(false)
   const [analyticsData, setAnalyticsData] = useState<any>(null)
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: subDays(new Date(), 30),
@@ -45,28 +56,24 @@ export default function DashboardPage() {
 
   // Function to format currency with peso sign for PDF
   const formatPesoCurrency = (amount: any) => {
-    // Ensure amount is a number
     const numAmount = typeof amount === "number" ? amount : Number.parseFloat(amount || 0)
-    // Check if it's a valid number
     if (isNaN(numAmount)) return "PHP 0.00"
-    // Use "PHP" text instead of the peso symbol to avoid encoding issues
     return `PHP ${numAmount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}`
   }
 
   // Function to format percentage change
   const formatPercentageChange = (change: number | undefined) => {
     if (change === undefined) return { value: "0%", isPositive: true }
-
     const isPositive = change >= 0
     const formattedValue = `${isPositive ? "+" : ""}${change.toFixed(1)}%`
-
     return { value: formattedValue, isPositive }
   }
 
   // Function to export dashboard data as PDF
   const handleExport = async () => {
-    if (!analyticsData) return
+    if (!analyticsData || isExporting) return
 
+    setIsExporting(true)
     try {
       // Import jsPDF and jspdf-autotable in a way that ensures proper initialization
       const { jsPDF } = await import("jspdf")
@@ -90,7 +97,7 @@ export default function DashboardPage() {
       doc.setFontSize(16)
       doc.text("Summary Metrics", 14, 40)
 
-      // Create summary metrics table using the imported autoTable function
+      // Create summary metrics table
       autoTable(doc, {
         startY: 45,
         head: [["Metric", "Value"]],
@@ -101,7 +108,7 @@ export default function DashboardPage() {
           ["Cash Payments", formatPesoCurrency(analyticsData.cashRevenue || 0)],
         ],
         theme: "grid",
-        headStyles: { fillColor: [34, 51, 102], textColor: 255 }, // Updated to primary color
+        headStyles: { fillColor: [34, 51, 102], textColor: 255 },
         styles: {
           fontSize: 10,
           cellPadding: 3,
@@ -118,7 +125,6 @@ export default function DashboardPage() {
         doc.setFontSize(16)
         doc.text("Daily Revenue", 14, firstTableEndY + 15)
 
-        // Create daily revenue table
         const dailyRevenueData = analyticsData.dailyRevenueData.map((item: any) => [
           format(new Date(item.date), "MM/dd/yyyy"),
           formatPesoCurrency(item.amount || 0),
@@ -129,7 +135,7 @@ export default function DashboardPage() {
           head: [["Date", "Revenue"]],
           body: dailyRevenueData,
           theme: "grid",
-          headStyles: { fillColor: [34, 51, 102], textColor: 255 }, // Updated to primary color
+          headStyles: { fillColor: [34, 51, 102], textColor: 255 },
           styles: {
             fontSize: 10,
             cellPadding: 3,
@@ -144,7 +150,6 @@ export default function DashboardPage() {
 
       // Add top routes section - MODIFIED FOR VERTICAL LAYOUT
       if (analyticsData.topRoutes && analyticsData.topRoutes.length > 0) {
-        // Check if we need a new page
         if (secondTableEndY > 220) {
           doc.addPage()
           doc.setFontSize(16)
@@ -154,14 +159,12 @@ export default function DashboardPage() {
           doc.text("Top Routes", 14, secondTableEndY + 15)
         }
 
-        // Create top routes table with vertical orientation and smaller font for route names
-        // Make sure to replace any "p" with "to" in route names and use even smaller font
         const topRoutesData = analyticsData.topRoutes.map((route: any) => {
-          // Ensure route name has correct "to" instead of "p"
-          const routeName = typeof route.route === "string" ? route.route.replace(/\bp\b/g, "to") : route.route
+          const routeName =
+            typeof route.route === "string" ? route.route.replace(/\bp\b/g, "to") : route.route
 
           return [
-            { content: routeName, styles: { cellWidth: "auto", halign: "left", fontSize: 7 } }, // Even smaller font (7pt)
+            { content: routeName, styles: { cellWidth: "auto", halign: "left", fontSize: 7 } },
             { content: route.count, styles: { cellWidth: 30, halign: "center" } },
           ]
         })
@@ -176,15 +179,15 @@ export default function DashboardPage() {
           ],
           body: topRoutesData,
           theme: "grid",
-          headStyles: { fillColor: [34, 51, 102], textColor: 255 }, // Updated to primary color
+          headStyles: { fillColor: [34, 51, 102], textColor: 255 },
           styles: {
-            fontSize: 10, // Default font size for other cells
+            fontSize: 10,
             cellPadding: 3,
             overflow: "linebreak",
           },
           columnStyles: {
-            0: { cellWidth: "auto" }, // Route column takes most of the space
-            1: { cellWidth: 30 }, // Tickets column is fixed width
+            0: { cellWidth: "auto" },
+            1: { cellWidth: 30 },
           },
           margin: { left: 14, right: 14 },
         })
@@ -195,7 +198,6 @@ export default function DashboardPage() {
 
       // Add recent transactions section
       if (recentTransactions && recentTransactions.length > 0) {
-        // Check if we need a new page
         if (thirdTableEndY > 180) {
           doc.addPage()
           doc.setFontSize(16)
@@ -205,10 +207,7 @@ export default function DashboardPage() {
           doc.text("Recent Transactions", 14, thirdTableEndY + 15)
         }
 
-        // Create recent transactions table
-        // Ensure fare values are properly converted to numbers
         const transactionsData = recentTransactions.map((transaction: any) => {
-          // Make sure fare is properly converted to a number
           const fareValue =
             typeof transaction.fare === "string"
               ? Number.parseFloat(transaction.fare.replace(/[^\d.-]/g, ""))
@@ -217,9 +216,9 @@ export default function DashboardPage() {
           return [
             format(new Date(transaction.timestamp), "MM/dd/yyyy"),
             transaction.passengerName,
-            `${transaction.from} to ${transaction.to}`.replace(/\bp\b/g, "to"), // Fix any "p" to "to" here as well
+            `${transaction.from} to ${transaction.to}`.replace(/\bp\b/g, "to"),
             transaction.paymentMethod,
-            formatPesoCurrency(fareValue), // Use the properly converted fare value
+            formatPesoCurrency(fareValue),
           ]
         })
 
@@ -228,7 +227,7 @@ export default function DashboardPage() {
           head: [["Date", "Passenger", "Route", "Payment", "Fare"]],
           body: transactionsData,
           theme: "grid",
-          headStyles: { fillColor: [34, 51, 102], textColor: 255 }, // Updated to primary color
+          headStyles: { fillColor: [34, 51, 102], textColor: 255 },
           styles: {
             fontSize: 9,
             cellPadding: 3,
@@ -245,7 +244,7 @@ export default function DashboardPage() {
         })
       }
 
-      // Add footer with generation date
+      // Footer with generation date
       const pageCount = doc.getNumberOfPages()
       for (let i = 1; i <= pageCount; i++) {
         doc.setPage(i)
@@ -263,6 +262,8 @@ export default function DashboardPage() {
     } catch (error) {
       console.error("Error generating PDF:", error)
       alert("Failed to generate PDF. See console for details.")
+    } finally {
+      setIsExporting(false)
     }
   }
 
@@ -276,10 +277,15 @@ export default function DashboardPage() {
             size="sm"
             className="w-full sm:w-auto text-white"
             onClick={handleExport}
-            disabled={isLoading || !analyticsData}
+            disabled={isLoading || !analyticsData || isExporting}
+            aria-busy={isExporting}
           >
-            <Download className="mr-2 h-4 w-4" />
-            <span>Export PDF</span>
+            {isExporting ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Download className="mr-2 h-4 w-4" />
+            )}
+            <span>{isExporting ? "Exporting…" : "Export PDF"}</span>
           </Button>
         </div>
       </div>
@@ -288,7 +294,6 @@ export default function DashboardPage() {
         {/* Stats Cards */}
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           {isLoading ? (
-            // Skeleton loaders for stats cards with consistent sizing
             Array(4)
               .fill(0)
               .map((_, i) => (
@@ -471,4 +476,3 @@ export default function DashboardPage() {
     </div>
   )
 }
-
