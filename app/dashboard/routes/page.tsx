@@ -264,20 +264,26 @@ export default function RoutesPage() {
   if (selectedRoute) {
     return (
       <div className="flex flex-col gap-4">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" onClick={handleBackToRoutes} className="flex items-center gap-2 bg-transparent">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-4">
+          <Button
+            variant="outline"
+            onClick={handleBackToRoutes}
+            className="flex items-center gap-2 bg-transparent w-full md:w-auto justify-center md:justify-start"
+          >
             <ArrowLeft className="h-4 w-4" />
             Back to Routes
           </Button>
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">
-              Buses on Route: {selectedRoute.from} → {selectedRoute.to}
+
+          <div className="w-full">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight break-words">
+              Buses on Route: {selectedRoute.from} <span aria-hidden>→</span> {selectedRoute.to}
             </h1>
-            <p className="text-muted-foreground">
+            <p className="text-sm sm:text-base text-muted-foreground">
               {routeBuses.length} bus{routeBuses.length !== 1 ? "es" : ""} found on this route
             </p>
           </div>
         </div>
+
 
         <Card>
           <CardHeader>
