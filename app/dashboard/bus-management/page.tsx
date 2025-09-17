@@ -1,3 +1,4 @@
+// app/dashboard/bus-management/page.tsx
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
@@ -42,6 +43,10 @@ import {
   getRemittanceHistory,
   resetRevenueAfterRemittance,
 } from "@/lib/bus-management-service"
+
+// Reusable classes to make scrollbars visible (track + thumb)
+const V_SCROLLBAR = "w-3 bg-white/10 hover:bg-white/20 [&>div]:bg-white/60 [&>div:hover]:bg-white [&>div]:rounded-full transition-colors"
+const H_SCROLLBAR = "h-3 bg-white/10 hover:bg-white/20 [&>div]:bg-white/60 [&>div:hover]:bg-white [&>div]:rounded-full transition-colors"
 
 export default function BusManagementPage() {
   const [isLoading, setIsLoading] = useState(true)
@@ -374,10 +379,10 @@ export default function BusManagementPage() {
                           <TableCell>
                             <Badge
                               className={`${item.status === "remitted"
-                                ? "bg-green-600"
-                                : item.status === "pending"
-                                  ? "bg-yellow-600"
-                                  : "bg-blue-600"
+                                  ? "bg-green-600"
+                                  : item.status === "pending"
+                                    ? "bg-yellow-600"
+                                    : "bg-blue-600"
                                 } text-white`}
                             >
                               {item.status === "remitted"
@@ -393,8 +398,9 @@ export default function BusManagementPage() {
                       ))}
                     </TableBody>
                   </Table>
-                  <ScrollBar orientation="vertical" />
-                  <ScrollBar orientation="horizontal" />
+                  {/* Visible vertical & horizontal scrollbars */}
+                  <ScrollBar orientation="vertical" className={V_SCROLLBAR} />
+                  <ScrollBar orientation="horizontal" className={H_SCROLLBAR} />
                 </ScrollArea>
               </div>
             )}
@@ -544,10 +550,10 @@ export default function BusManagementPage() {
               ))}
             </TableBody>
           </Table>
-          <ScrollBar orientation="horizontal" />
+          {/* Visible horizontal scrollbar under the table */}
+          <ScrollBar orientation="horizontal" className={H_SCROLLBAR} />
         </ScrollArea>
       </div>
     )
   }
 }
-

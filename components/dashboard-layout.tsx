@@ -25,7 +25,7 @@ import {
   SidebarFooter,
   SidebarMenu,
   SidebarMenuItem,
-  type SidebarMenuButton,
+  // removed: type SidebarMenuButton,
   SidebarGroup,
   SidebarGroupLabel,
   SidebarGroupContent,
@@ -64,8 +64,8 @@ export function DashboardLayout({ children, user }: { children: React.ReactNode;
 
   // Custom sidebar menu button with active background
   const CustomSidebarMenuButton = React.forwardRef<
-    HTMLDivElement,
-    React.ComponentPropsWithoutRef<typeof SidebarMenuButton> & {
+    HTMLAnchorElement,
+    React.ComponentPropsWithoutRef<"a"> & {
       isActive?: boolean
       href: string
       icon: React.ElementType
@@ -269,4 +269,3 @@ export function DashboardLayout({ children, user }: { children: React.ReactNode;
     </SidebarProvider>
   )
 }
-
