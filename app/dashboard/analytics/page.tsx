@@ -7,12 +7,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { DatePickerWithRange } from "@/components/date-picker-with-range"
 import type { DateRange } from "react-day-picker"
-import { format, subDays } from "date-fns"
+import { format, subDays, startOfDay, endOfDay } from "date-fns"
 import { Download, Loader2 } from "lucide-react"
 import { getAnalyticsData } from "@/lib/trips-service"
 import { formatCurrency } from "@/lib/utils"
 import { RevenueChart } from "@/components/revenue-chart"
 import { PaymentMethodChart } from "@/components/payment-method-chart"
+
+function normalizeRange(range: DateRange | undefined): { from?: Date; to?: Date } {
+  if (!range) return {}
+  const from = range.from ? startOfDay(range.from) : undefined
+  const to = range.to ? endOfDay(range.to) : (range.from ? endOfDay(range.from) : undefined)
+  return { from, to }
+}
 
 /**
  * EXPORT SCOPE (strictly what's on this page):
@@ -37,7 +44,8 @@ export default function AnalyticsPage() {
   const fetchData = useCallback(async () => {
     setIsLoading(true)
     try {
-      const data = await getAnalyticsData(dateRange?.from, dateRange?.to)
+      const { from, to } = normalizeRange(dateRange)
+      const data = await getAnalyticsData(from, to)
       setAnalyticsData(data)
     } catch (error) {
       console.error("Error fetching analytics data:", error)

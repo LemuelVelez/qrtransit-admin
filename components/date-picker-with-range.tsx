@@ -1,7 +1,17 @@
 "use client"
 
 import { useState } from "react"
-import { format, subDays, startOfMonth, endOfMonth, startOfYear } from "date-fns"
+import {
+  format,
+  subDays,
+  startOfMonth,
+  endOfMonth,
+  startOfYear,
+  startOfDay,
+  endOfDay,
+  startOfToday,
+  endOfToday,
+} from "date-fns"
 import { CalendarIcon, X } from "lucide-react"
 import type { DateRange } from "react-day-picker"
 
@@ -28,24 +38,23 @@ export function DatePickerWithRange({ className, date, onDateChange }: DatePicke
   const [isPopoverOpen, setIsPopoverOpen] = useState(false)
   const isDesktop = useMediaQuery("(min-width: 768px)")
 
-  // Define preset date ranges
   const datePresets: DatePreset[] = [
     {
       name: "today",
       label: "Today",
       value: () => ({
-        from: new Date(),
-        to: new Date(),
+        from: startOfToday(),
+        to: endOfToday(),
       }),
     },
     {
       name: "yesterday",
       label: "Yesterday",
       value: () => {
-        const yesterday = subDays(new Date(), 1)
+        const y = subDays(new Date(), 1)
         return {
-          from: yesterday,
-          to: yesterday,
+          from: startOfDay(y),
+          to: endOfDay(y),
         }
       },
     },
@@ -53,16 +62,16 @@ export function DatePickerWithRange({ className, date, onDateChange }: DatePicke
       name: "last7days",
       label: "Last 7 Days",
       value: () => ({
-        from: subDays(new Date(), 6),
-        to: new Date(),
+        from: startOfDay(subDays(new Date(), 6)),
+        to: endOfToday(),
       }),
     },
     {
       name: "last30days",
       label: "Last 30 Days",
       value: () => ({
-        from: subDays(new Date(), 29),
-        to: new Date(),
+        from: startOfDay(subDays(new Date(), 29)),
+        to: endOfToday(),
       }),
     },
     {
@@ -70,7 +79,7 @@ export function DatePickerWithRange({ className, date, onDateChange }: DatePicke
       label: "This Month",
       value: () => ({
         from: startOfMonth(new Date()),
-        to: new Date(),
+        to: endOfToday(),
       }),
     },
     {
@@ -80,8 +89,8 @@ export function DatePickerWithRange({ className, date, onDateChange }: DatePicke
         const today = new Date()
         const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1)
         return {
-          from: startOfMonth(lastMonth),
-          to: endOfMonth(lastMonth),
+          from: startOfDay(startOfMonth(lastMonth)),
+          to: endOfDay(endOfMonth(lastMonth)),
         }
       },
     },
@@ -90,19 +99,24 @@ export function DatePickerWithRange({ className, date, onDateChange }: DatePicke
       label: "This Year",
       value: () => ({
         from: startOfYear(new Date()),
-        to: new Date(),
+        to: endOfToday(),
       }),
     },
   ]
 
-  // Handle preset selection
   const handleSelectPreset = (preset: DatePreset) => {
     const newRange = preset.value()
     onDateChange(newRange)
     setIsPopoverOpen(false)
   }
 
-  // Clear date selection
+  const handleCalendarSelect = (range: DateRange | undefined) => {
+    if (!range) return onDateChange(undefined)
+    const from = range.from ? startOfDay(range.from) : undefined
+    const to = range.to ? endOfDay(range.to) : (range.from ? endOfDay(range.from) : undefined)
+    onDateChange(from || to ? { from, to } : undefined)
+  }
+
   const handleClearDate = () => {
     onDateChange(undefined)
   }
@@ -174,7 +188,7 @@ export function DatePickerWithRange({ className, date, onDateChange }: DatePicke
                   mode="range"
                   defaultMonth={date?.from}
                   selected={date}
-                  onSelect={onDateChange}
+                  onSelect={handleCalendarSelect}
                   numberOfMonths={isDesktop ? 2 : 1}
                   className="p-3 bg-primary text-white"
                 />
@@ -194,4 +208,3 @@ export function DatePickerWithRange({ className, date, onDateChange }: DatePicke
     </div>
   )
 }
-

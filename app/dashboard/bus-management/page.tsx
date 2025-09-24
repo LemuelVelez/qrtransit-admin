@@ -34,7 +34,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { subDays } from "date-fns"
+import { subDays, startOfDay, endOfDay } from "date-fns"
 import type { DateRange } from "react-day-picker"
 import { formatCurrency } from "@/lib/utils"
 import {
@@ -43,6 +43,13 @@ import {
   getRemittanceHistory,
   resetRevenueAfterRemittance,
 } from "@/lib/bus-management-service"
+
+function normalizeRange(range: DateRange | undefined): { from?: Date; to?: Date } {
+  if (!range) return {}
+  const from = range.from ? startOfDay(range.from) : undefined
+  const to = range.to ? endOfDay(range.to) : (range.from ? endOfDay(range.from) : undefined)
+  return { from, to }
+}
 
 // Reusable classes to make scrollbars visible (track + thumb)
 const V_SCROLLBAR = "w-3 bg-white/10 hover:bg-white/20 [&>div]:bg-white/60 [&>div:hover]:bg-white [&>div]:rounded-full transition-colors"
@@ -71,7 +78,8 @@ export default function BusManagementPage() {
   const fetchBuses = async () => {
     setIsLoading(true)
     try {
-      const busesData = await getBusesWithConductors(dateRange?.from, dateRange?.to)
+      const { from, to } = normalizeRange(dateRange)
+      const busesData = await getBusesWithConductors(from, to)
       setBuses(busesData)
       filterBuses(busesData, activeTab, searchQuery)
     } catch (error) {
@@ -189,11 +197,12 @@ export default function BusManagementPage() {
     setShowHistoryDialog(true)
 
     try {
+      const { from, to } = normalizeRange(dateRange)
       const history = await getRemittanceHistory(
         bus.id,
         bus.conductorId,
-        dateRange?.from ? subDays(dateRange.from, 30) : undefined,
-        dateRange?.to,
+        from ? subDays(from, 30) : undefined,
+        to,
       )
       setRemittanceHistory(history)
     } catch (error) {
@@ -379,10 +388,10 @@ export default function BusManagementPage() {
                           <TableCell>
                             <Badge
                               className={`${item.status === "remitted"
-                                  ? "bg-green-600"
-                                  : item.status === "pending"
-                                    ? "bg-yellow-600"
-                                    : "bg-blue-600"
+                                ? "bg-green-600"
+                                : item.status === "pending"
+                                  ? "bg-yellow-600"
+                                  : "bg-blue-600"
                                 } text-white`}
                             >
                               {item.status === "remitted"

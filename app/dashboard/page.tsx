@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { DatePickerWithRange } from "@/components/date-picker-with-range"
 import type { DateRange } from "react-day-picker"
-import { format, subDays } from "date-fns"
+import { format, subDays, startOfDay, endOfDay } from "date-fns"
 import {
   Download,
   ArrowUp,
@@ -23,6 +23,13 @@ import { RevenueChart } from "@/components/revenue-chart"
 import { PaymentMethodChart } from "@/components/payment-method-chart"
 import { Skeleton } from "@/components/ui/skeleton"
 
+function normalizeRange(range: DateRange | undefined): { from?: Date; to?: Date } {
+  if (!range) return {}
+  const from = range.from ? startOfDay(range.from) : undefined
+  const to = range.to ? endOfDay(range.to) : (range.from ? endOfDay(range.from) : undefined)
+  return { from, to }
+}
+
 export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isExporting, setIsExporting] = useState(false)
@@ -35,7 +42,8 @@ export default function DashboardPage() {
   const fetchData = useCallback(async () => {
     setIsLoading(true)
     try {
-      const data = await getAnalyticsData(dateRange?.from, dateRange?.to)
+      const { from, to } = normalizeRange(dateRange)
+      const data = await getAnalyticsData(from, to)
       setAnalyticsData(data)
     } catch (error) {
       console.error("Error fetching analytics data:", error)

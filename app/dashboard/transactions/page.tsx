@@ -11,11 +11,18 @@ import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { DatePickerWithRange } from "@/components/date-picker-with-range"
 import type { DateRange } from "react-day-picker"
-import { subDays, format } from "date-fns"
+import { subDays, format, startOfDay, endOfDay } from "date-fns"
 import { Search, Download, Loader2, QrCode, Banknote } from "lucide-react"
 import { getAllTrips, getTripsByDateRange } from "@/lib/trips-service"
 import { formatDate } from "@/lib/utils"
 import { ScrollAreaScrollbar } from "@radix-ui/react-scroll-area"
+
+function normalizeRange(range: DateRange | undefined): { from?: Date; to?: Date } {
+  if (!range) return {}
+  const from = range.from ? startOfDay(range.from) : undefined
+  const to = range.to ? endOfDay(range.to) : (range.from ? endOfDay(range.from) : undefined)
+  return { from, to }
+}
 
 export default function TransactionsPage() {
   const [trips, setTrips] = useState<any[]>([])
@@ -32,8 +39,9 @@ export default function TransactionsPage() {
     setIsLoading(true)
     try {
       let tripsData
-      if (dateRange?.from && dateRange?.to) {
-        tripsData = await getTripsByDateRange(dateRange.from, dateRange.to)
+      const { from, to } = normalizeRange(dateRange)
+      if (from && to) {
+        tripsData = await getTripsByDateRange(from, to)
       } else {
         tripsData = await getAllTrips()
       }
@@ -87,34 +95,29 @@ export default function TransactionsPage() {
   // Normalize punctuation to avoid weird glyphs in PDF (e.g., "!’")
   const normalizePunctuation = (s: string) =>
     s
-      .replace(/[\u2018\u2019\u201A\u201B]/g, "'") // smart singles -> '
-      .replace(/[\u201C\u201D\u201E\u201F]/g, '"') // smart doubles -> "
-      .replace(/^\s*[¡!]['’‛"]?\s*/, "") // strip leading "!’" / "!’" / variants
+      .replace(/[\u2018\u2019\u201A\u201B]/g, "'")
+      .replace(/[\u201C\u201D\u201E\u201F]/g, '"')
+      .replace(/^\s*[¡!]['’‛"]?\s*/, "")
       .replace(/^\s+|\s+$/g, "")
 
-  // Insert zero-width spaces inside very long words so AutoTable can break them
   const breakLongWords = (text: string, max = 18) =>
     text.replace(new RegExp(`(\\S{${max}})(?=\\S)`, "g"), "$1\u200b")
 
-  // Shorten common trailing country to acronym for compact PDF layout
   const abbreviateCountry = (text: string) =>
     text.replace(/,\s*Philippines\b/gi, ", PH")
 
   const preparePlaceForPdf = (place?: string) => {
     const cleaned = normalizePunctuation(place || "")
     const abbreviated = abbreviateCountry(cleaned)
-    // Force line breaks after commas; also add break points in long tokens
     return breakLongWords(abbreviated).replace(/, /g, ",\n")
   }
 
-  // Route block for PDF: use plain words "From:" and "To:" (no special arrows)
   const routeForPdf = (from?: string, to?: string) => {
     const origin = preparePlaceForPdf(from)
     const dest = preparePlaceForPdf(to)
     return `From: ${origin}\nTo: ${dest}`
   }
 
-  // --- Export: PHP currency; centered header; non-truncated Route; no special glyphs ---
   const handleExport = async () => {
     if (isExporting) return
     setIsExporting(true)
@@ -122,7 +125,6 @@ export default function TransactionsPage() {
       const { jsPDF } = await import("jspdf")
       const autoTable = (await import("jspdf-autotable")).default
 
-      // If any route is long, give more room with landscape; otherwise portrait
       const anyLongRoute = filteredTrips.some(
         (t) => (`${t?.from || ""} ${t?.to || ""}`.length >= 40) || (String(t?.transactionId || "").length > 24),
       )
@@ -134,10 +136,8 @@ export default function TransactionsPage() {
       const dateFrom = dateRange?.from ? format(dateRange.from, "MMM dd, yyyy") : ""
       const dateTo = dateRange?.to ? format(dateRange.to, "MMM dd, yyyy") : ""
 
-      // Title (centered)
       doc.setFontSize(20)
       doc.text("Transactions Report", pageWidth / 2, 15, { align: "center" })
-      // Date range (centered)
       doc.setFontSize(12)
       doc.text(`Date Range: ${dateFrom} to ${dateTo}`, pageWidth / 2, 25, { align: "center" })
 
@@ -151,21 +151,20 @@ export default function TransactionsPage() {
         t.transactionId ?? "",
       ])
 
-      // Column widths (route gets generous width; others balanced). Landscape gets wider route.
       const columnStyles = anyLongRoute
         ? {
-          0: { cellWidth: 32 },  // Date
-          1: { cellWidth: 40 },  // Passenger
-          2: { cellWidth: 78 },  // Route (wide, wraps fully)
-          3: { cellWidth: 18 },  // Bus #
-          4: { cellWidth: 24 },  // Payment
-          5: { cellWidth: 28, halign: "right" }, // Fare (PHP)
-          6: { cellWidth: 52 },  // Transaction ID
+          0: { cellWidth: 32 },
+          1: { cellWidth: 40 },
+          2: { cellWidth: 78 },
+          3: { cellWidth: 18 },
+          4: { cellWidth: 24 },
+          5: { cellWidth: 28, halign: "right" },
+          6: { cellWidth: 52 },
         }
         : {
           0: { cellWidth: 26 },
           1: { cellWidth: 34 },
-          2: { cellWidth: 70 },  // Route (wide enough; wraps fully)
+          2: { cellWidth: 70 },
           3: { cellWidth: 16 },
           4: { cellWidth: 22 },
           5: { cellWidth: 24, halign: "right" },
@@ -193,7 +192,6 @@ export default function TransactionsPage() {
         margin: { left: 14, right: 14 },
         rowPageBreak: "auto",
         avoidTableSplit: false,
-        // Downsize only the Route cell when extremely long to prevent truncation
         didParseCell: (data: any) => {
           if (data.section === "body" && data.column.index === 2) {
             const txt = String(data.cell.raw || "")
@@ -201,7 +199,6 @@ export default function TransactionsPage() {
             else if (txt.length > 140) data.cell.styles.fontSize = 8
           }
         },
-        // Ensure footer doesn't overlap table
         didDrawPage: (data: any) => {
           doc.setFontSize(8)
           const pageNumber = doc.getNumberOfPages()
@@ -300,7 +297,6 @@ export default function TransactionsPage() {
                             {trip.passengerName}
                           </TableCell>
                           <TableCell className="truncate max-w-[260px]">
-                            {/* UI keeps arrow; PDF uses "From/To" words */}
                             {trip.from} → {trip.to}
                           </TableCell>
                           <TableCell>{trip.busNumber || "N/A"}</TableCell>
