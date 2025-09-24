@@ -25,7 +25,6 @@ import {
   SidebarFooter,
   SidebarMenu,
   SidebarMenuItem,
-  // removed: type SidebarMenuButton,
   SidebarGroup,
   SidebarGroupLabel,
   SidebarGroupContent,
@@ -44,6 +43,7 @@ import {
   LogOut,
   User,
   DollarSign,
+  Image as ImageIcon, // ← added
 } from "lucide-react"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
@@ -160,6 +160,13 @@ export function DashboardLayout({ children, user }: { children: React.ReactNode;
                     icon={DollarSign}
                     label="Bus Management"
                     isActive={pathname === "/dashboard/bus-management"}
+                  />
+                  {/* NEW: Media manager */}
+                  <CustomSidebarMenuButton
+                    href="/dashboard/media"
+                    icon={ImageIcon}
+                    label="Media"
+                    isActive={pathname === "/dashboard/media"}
                   />
                 </SidebarMenu>
               </SidebarGroupContent>

@@ -7,6 +7,9 @@ export const config = {
   databaseId: process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID,
   usersCollectionId: process.env.NEXT_PUBLIC_APPWRITE_USERS_COLLECTION_ID,
   avatarBucketId: process.env.NEXT_PUBLIC_APPWRITE_AVATAR_BUCKET_ID,
+  // NEW: expose passenger photo bucket id for media manager
+  passengerPhotoBucketId:
+    process.env.NEXT_PUBLIC_APPWRITE_PASSENGER_PHOTO_BUCKET_ID,
   discountsCollectionId:
     process.env.NEXT_PUBLIC_APPWRITE_DISCOUNTS_COLLECTION_ID,
 };
