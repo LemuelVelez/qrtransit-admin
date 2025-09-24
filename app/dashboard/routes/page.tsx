@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Search, Loader2, ArrowLeft, Bus } from "lucide-react"
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area"
 import { getAllRoutes, updateRouteStatus, getBusesByRoute } from "@/lib/route-service"
+import { getTripsByRoute, type Trip } from "@/lib/trips-service"
 import { formatDate, cn } from "@/lib/utils"
 
 // DataTable components
@@ -25,6 +26,10 @@ export default function RoutesPage() {
   const [selectedRoute, setSelectedRoute] = useState<{ from: string; to: string } | null>(null)
   const [routeBuses, setRouteBuses] = useState<any[]>([])
   const [loadingBuses, setLoadingBuses] = useState(false)
+
+  // NEW: state for passengers (trips) on the selected route
+  const [routePassengers, setRoutePassengers] = useState<Trip[]>([])
+  const [loadingPassengers, setLoadingPassengers] = useState(false)
 
   useEffect(() => {
     const fetchRoutes = async () => {
@@ -61,6 +66,8 @@ export default function RoutesPage() {
 
   const handleRouteClick = async (from: string, to: string) => {
     setSelectedRoute({ from, to })
+
+    // Fetch buses on this route
     setLoadingBuses(true)
     try {
       const buses = await getBusesByRoute(from, to)
@@ -71,11 +78,24 @@ export default function RoutesPage() {
     } finally {
       setLoadingBuses(false)
     }
+
+    // NEW: Fetch passengers (trips) on this route using NEXT_PUBLIC_APPWRITE_TRIPS_COLLECTION_ID via trips-service
+    setLoadingPassengers(true)
+    try {
+      const trips = await getTripsByRoute(from, to)
+      setRoutePassengers(trips)
+    } catch (error) {
+      console.error("Error fetching passengers for route:", error)
+      setRoutePassengers([])
+    } finally {
+      setLoadingPassengers(false)
+    }
   }
 
   const handleBackToRoutes = () => {
     setSelectedRoute(null)
     setRouteBuses([])
+    setRoutePassengers([])
   }
 
   const handleToggleRouteStatus = async (routeId: string, currentStatus: boolean) => {
@@ -248,7 +268,57 @@ export default function RoutesPage() {
     [updatingRouteId],
   )
 
-  // Initialize the table
+  // NEW: columns for passengers (trips) table
+  const passengerColumns = useMemo<ColumnDef<Trip>[]>(
+    () => [
+      {
+        accessorKey: "passengerName",
+        header: "Passenger",
+        cell: ({ row }) => (
+          <div className="max-w-[200px] truncate font-medium">{row.original.passengerName || "Unknown Passenger"}</div>
+        ),
+      },
+      {
+        accessorKey: "passengerType",
+        header: "Type",
+        cell: ({ row }) => (
+          <Badge className="bg-blue-600/90 text-white">
+            {row.original.passengerType || "Regular"}
+          </Badge>
+        ),
+      },
+      {
+        accessorKey: "fare",
+        header: "Fare",
+        cell: ({ row }) => <div className="tabular-nums">{row.original.fare || "₱0.00"}</div>,
+      },
+      {
+        accessorKey: "paymentMethod",
+        header: "Payment",
+        cell: ({ row }) => (
+          <Badge className={cn(
+            row.original.paymentMethod === "QR" ? "bg-emerald-600" : "bg-slate-700",
+            "text-white"
+          )}>
+            {row.original.paymentMethod || "QR"}
+          </Badge>
+        ),
+      },
+      {
+        accessorKey: "busNumber",
+        header: "Bus #",
+        cell: ({ row }) => <div className="font-medium">{row.original.busNumber || "—"}</div>,
+      },
+      {
+        accessorKey: "timestamp",
+        header: "Date",
+        cell: ({ row }) => <div>{formatDate(row.original.timestamp)}</div>,
+      },
+    ],
+    [],
+  )
+
+  // Initialize the tables
   const table = useReactTable({
     data: filteredRoutes,
     columns,
@@ -258,6 +328,13 @@ export default function RoutesPage() {
   const busTable = useReactTable({
     data: routeBuses,
     columns: busColumns,
+    getCoreRowModel: getCoreRowModel(),
+  })
+
+  // NEW: passengers table
+  const passengerTable = useReactTable({
+    data: routePassengers,
+    columns: passengerColumns,
     getCoreRowModel: getCoreRowModel(),
   })
 
@@ -276,15 +353,16 @@ export default function RoutesPage() {
 
           <div className="w-full">
             <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight break-words">
-              Buses on Route: {selectedRoute.from} <span aria-hidden>→</span> {selectedRoute.to}
+              Route: {selectedRoute.from} <span aria-hidden>→</span> {selectedRoute.to}
             </h1>
             <p className="text-sm sm:text-base text-muted-foreground">
-              {routeBuses.length} bus{routeBuses.length !== 1 ? "es" : ""} found on this route
+              {routeBuses.length} bus{routeBuses.length !== 1 ? "es" : ""} • {routePassengers.length} passenger
+              {routePassengers.length !== 1 ? "s" : ""} found on this route
             </p>
           </div>
         </div>
 
-
+        {/* Buses card */}
         <Card>
           <CardHeader>
             <CardTitle>Buses on This Route</CardTitle>
@@ -345,6 +423,68 @@ export default function RoutesPage() {
             )}
           </CardContent>
         </Card>
+
+        {/* NEW: Passengers card */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Passengers on This Route</CardTitle>
+            <CardDescription>
+              Trips recorded for {selectedRoute.from} → {selectedRoute.to}. Pulled from the Trips collection.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loadingPassengers ? (
+              <div className="flex justify-center items-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : (
+              <div className="rounded-md border overflow-hidden">
+                <ScrollArea className="h-[400px]">
+                  <div className="min-w-[900px]">
+                    <table className="w-full caption-bottom text-sm">
+                      <thead className="[&_tr]:border-b sticky top-0 z-10 bg-primary hover:primary/30">
+                        {passengerTable.getHeaderGroups().map((headerGroup) => (
+                          <tr key={headerGroup.id} className="border-b transition-colors">
+                            {headerGroup.headers.map((header) => (
+                              <th
+                                key={header.id}
+                                className="h-12 px-4 text-left align-middle font-medium text-slate-700 dark:text-slate-300 [&:has([role=checkbox])]:pr-0"
+                              >
+                                {header.isPlaceholder
+                                  ? null
+                                  : flexRender(header.column.columnDef.header, header.getContext())}
+                              </th>
+                            ))}
+                          </tr>
+                        ))}
+                      </thead>
+                      <tbody className="[&_tr:last-child]:border-0">
+                        {passengerTable.getRowModel().rows?.length ? (
+                          passengerTable.getRowModel().rows.map((row) => (
+                            <tr key={row.id} className="border-b transition-colors hover:bg-muted/50">
+                              {row.getVisibleCells().map((cell) => (
+                                <td key={cell.id} className="p-4 align-middle [&:has([role=checkbox])]:pr-0">
+                                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                </td>
+                              ))}
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={passengerColumns.length} className="h-24 text-center">
+                              No passengers found for this route
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                  <ScrollBar orientation="horizontal" />
+                </ScrollArea>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     )
   }
@@ -359,7 +499,7 @@ export default function RoutesPage() {
         <CardHeader>
           <CardTitle>Active Routes</CardTitle>
           <CardDescription>
-            Manage bus routes and their status. Click on a route to see buses that travel on it.
+            Manage bus routes and their status. Click on a route to see buses and passengers that travel on it.
           </CardDescription>
         </CardHeader>
         <CardContent>
