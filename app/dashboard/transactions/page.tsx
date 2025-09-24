@@ -16,11 +16,12 @@ import { Search, Download, Loader2, QrCode, Banknote } from "lucide-react"
 import { getAllTrips, getTripsByDateRange } from "@/lib/trips-service"
 import { formatDate } from "@/lib/utils"
 import { ScrollAreaScrollbar } from "@radix-ui/react-scroll-area"
+import type { Styles, HAlignType } from "jspdf-autotable"
 
 function normalizeRange(range: DateRange | undefined): { from?: Date; to?: Date } {
   if (!range) return {}
   const from = range.from ? startOfDay(range.from) : undefined
-  const to = range.to ? endOfDay(range.to) : (range.from ? endOfDay(range.from) : undefined)
+  const to = range.to ? endOfDay(range.to) : range.from ? endOfDay(range.from) : undefined
   return { from, to }
 }
 
@@ -103,8 +104,7 @@ export default function TransactionsPage() {
   const breakLongWords = (text: string, max = 18) =>
     text.replace(new RegExp(`(\\S{${max}})(?=\\S)`, "g"), "$1\u200b")
 
-  const abbreviateCountry = (text: string) =>
-    text.replace(/,\s*Philippines\b/gi, ", PH")
+  const abbreviateCountry = (text: string) => text.replace(/,\s*Philippines\b/gi, ", PH")
 
   const preparePlaceForPdf = (place?: string) => {
     const cleaned = normalizePunctuation(place || "")
@@ -126,7 +126,7 @@ export default function TransactionsPage() {
       const autoTable = (await import("jspdf-autotable")).default
 
       const anyLongRoute = filteredTrips.some(
-        (t) => (`${t?.from || ""} ${t?.to || ""}`.length >= 40) || (String(t?.transactionId || "").length > 24),
+        (t) => `${t?.from || ""} ${t?.to || ""}`.length >= 40 || String(t?.transactionId || "").length > 24,
       )
 
       const doc = new jsPDF({ orientation: anyLongRoute ? "landscape" : "portrait" })
@@ -151,25 +151,28 @@ export default function TransactionsPage() {
         t.transactionId ?? "",
       ])
 
-      const columnStyles = anyLongRoute
-        ? {
-          0: { cellWidth: 32 },
-          1: { cellWidth: 40 },
-          2: { cellWidth: 78 },
-          3: { cellWidth: 18 },
-          4: { cellWidth: 24 },
-          5: { cellWidth: 28, halign: "right" },
-          6: { cellWidth: 52 },
-        }
-        : {
-          0: { cellWidth: 26 },
-          1: { cellWidth: 34 },
-          2: { cellWidth: 70 },
-          3: { cellWidth: 16 },
-          4: { cellWidth: 22 },
-          5: { cellWidth: 24, halign: "right" },
-          6: { cellWidth: 40 },
-        }
+      // ---- Explicit column styles typing ----
+      const longCols: Record<string, Partial<Styles>> = {
+        "0": { cellWidth: 32 },
+        "1": { cellWidth: 40 },
+        "2": { cellWidth: 78 },
+        "3": { cellWidth: 18 },
+        "4": { cellWidth: 24 },
+        "5": { cellWidth: 28, halign: "right" as HAlignType },
+        "6": { cellWidth: 52 },
+      }
+
+      const normalCols: Record<string, Partial<Styles>> = {
+        "0": { cellWidth: 26 },
+        "1": { cellWidth: 34 },
+        "2": { cellWidth: 70 },
+        "3": { cellWidth: 16 },
+        "4": { cellWidth: 22 },
+        "5": { cellWidth: 24, halign: "right" as HAlignType },
+        "6": { cellWidth: 40 },
+      }
+
+      const columnStyles: Record<string, Partial<Styles>> = anyLongRoute ? longCols : normalCols
 
       autoTable(doc, {
         startY: 35,
@@ -191,7 +194,6 @@ export default function TransactionsPage() {
         columnStyles,
         margin: { left: 14, right: 14 },
         rowPageBreak: "auto",
-        avoidTableSplit: false,
         didParseCell: (data: any) => {
           if (data.section === "body" && data.column.index === 2) {
             const txt = String(data.cell.raw || "")
