@@ -187,12 +187,14 @@ export default function TransactionStatusPage() {
         <CardContent>
           <Tabs defaultValue="pending" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <TabsList className="max-w-xs bg-primary text-white">
-                <TabsTrigger value="pending">Pending</TabsTrigger>
-                <TabsTrigger value="completed">Completed</TabsTrigger>
-                <TabsTrigger value="failed">Failed</TabsTrigger>
-                <TabsTrigger value="all">All</TabsTrigger>
-              </TabsList>
+              <div className="w-full overflow-x-auto pb-2">
+                <TabsList className="max-w-xs bg-primary text-white">
+                  <TabsTrigger value="pending">Pending</TabsTrigger>
+                  <TabsTrigger value="completed">Completed</TabsTrigger>
+                  <TabsTrigger value="failed">Failed</TabsTrigger>
+                  <TabsTrigger value="all">All</TabsTrigger>
+                </TabsList>
+              </div>
 
               <div className="relative w-full sm:w-auto">
                 <Search className="absolute left-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
