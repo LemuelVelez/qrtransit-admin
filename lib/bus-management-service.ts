@@ -50,11 +50,7 @@ async function listAllDocuments(
       const queries = [...baseQueries, Query.limit(batchSize)];
       if (cursor) queries.push(Query.cursorAfter(cursor));
 
-      const res = await databases.listDocuments(
-        databaseId,
-        collectionId,
-        queries
-      );
+      const res = await databases.listDocuments(databaseId, collectionId, queries);
       if (res.documents.length === 0) break;
 
       all.push(...res.documents);
@@ -85,9 +81,8 @@ async function listAllDocuments(
  * Get buses with their conductors and revenue information for a specific date range
  * (uses unlimited, batched reads under the hood to avoid API strain)
  *
- * FIX: Include buses that have remittances within the selected date range even if
- * they have no route record in that same range (this caused "today" remittances
- * to be missing from the list).
+ * FIX: Preserve/restore route info for entries sourced from remittances-only by
+ * hydrating from the most recent route (within a safe buffer) or from trips.
  */
 export async function getBusesWithConductors(
   startDate?: Date,
@@ -100,12 +95,7 @@ export async function getBusesWithConductors(
     const remittanceCollectionId = getCashRemittanceCollectionId();
     const usersCollectionId = getUsersCollectionId();
 
-    if (
-      !databaseId ||
-      !routesCollectionId ||
-      !tripsCollectionId ||
-      !usersCollectionId
-    ) {
+    if (!databaseId || !routesCollectionId || !tripsCollectionId || !usersCollectionId) {
       throw new Error("Appwrite configuration missing");
     }
 
@@ -113,25 +103,19 @@ export async function getBusesWithConductors(
     if (!endDate) endDate = new Date();
 
     const startTimestamp = startDate.getTime().toString();
-    const endTimestamp = new Date(endDate.setHours(23, 59, 59, 999))
-      .getTime()
-      .toString();
+    const endTimestamp = new Date(endDate.setHours(23, 59, 59, 999)).getTime().toString();
 
     // 1) Get all routes in range (batched) – base source of buses
-    const routesResponse = await listAllDocuments(
-      databaseId,
-      routesCollectionId,
-      [
-        Query.greaterThanEqual("timestamp", startTimestamp),
-        Query.lessThanEqual("timestamp", endTimestamp),
-      ]
-    );
+    const routesInRange = await listAllDocuments(databaseId, routesCollectionId, [
+      Query.greaterThanEqual("timestamp", startTimestamp),
+      Query.lessThanEqual("timestamp", endTimestamp),
+    ]);
 
     // Build bus map from routes
     const busMap = new Map<string, BusWithConductor>();
     const conductorIds = new Set<string>();
 
-    for (const route of routesResponse) {
+    for (const route of routesInRange) {
       const busKey = `${route.busNumber}-${route.conductorId}`;
       conductorIds.add(route.conductorId);
 
@@ -152,54 +136,41 @@ export async function getBusesWithConductors(
     }
 
     // 2) Bring in remittances within range and ensure those buses exist in the map
-    //    (this is the key change so "today's remitted" are shown even without a route today)
-    const remittancesInRange = await listAllDocuments(
-      databaseId,
-      remittanceCollectionId,
-      [
-        Query.greaterThanEqual("timestamp", startTimestamp),
-        Query.lessThanEqual("timestamp", endTimestamp),
-      ]
-    );
+    //    (keeps "today's remitted" visible even without a fresh route today)
+    const remittancesInRange = await listAllDocuments(databaseId, remittanceCollectionId, [
+      Query.greaterThanEqual("timestamp", startTimestamp),
+      Query.lessThanEqual("timestamp", endTimestamp),
+    ]);
 
     for (const rem of remittancesInRange) {
       const busKey = `${rem.busNumber}-${rem.conductorId}`;
       conductorIds.add(rem.conductorId);
 
       if (!busMap.has(busKey)) {
-        // Create a minimal row from the remittance record
+        // Create a minimal row from the remittance record; route will be hydrated later
         busMap.set(busKey, {
           id: rem.busId || rem.$id,
           busNumber: rem.busNumber,
           conductorId: rem.conductorId,
           conductorName: rem.conductorName || "Unknown Conductor",
-          route: rem.route || "—", // route may be unknown if it didn't come from routes collection
+          route: "", // <-- will hydrate below
           qrRevenue: 0,
           cashRevenue: 0,
           totalRevenue: 0,
           cashRemitted: rem.status === "remitted",
           remittanceStatus: rem.status || "pending",
-          remittanceAmount: rem.amount
-            ? Number.parseFloat(rem.amount)
-            : undefined,
+          remittanceAmount: rem.amount ? Number.parseFloat(rem.amount) : undefined,
           remittanceNotes: rem.notes || "",
-          remittanceTimestamp: rem.timestamp
-            ? Number.parseInt(rem.timestamp)
-            : undefined,
+          remittanceTimestamp: rem.timestamp ? Number.parseInt(rem.timestamp) : undefined,
           revenueId: rem.revenueId || "",
-          verificationTimestamp: rem.verificationTimestamp
-            ? Number.parseInt(rem.verificationTimestamp)
-            : undefined,
+          verificationTimestamp: rem.verificationTimestamp ? Number.parseInt(rem.verificationTimestamp) : undefined,
         });
       }
     }
 
     // 3) Batch-fetch conductors to avoid N queries (up to 100 values per equal)
     const conductorIdList = Array.from(conductorIds);
-    const conductorCache = new Map<
-      string,
-      { firstName: string; lastName: string }
-    >();
+    const conductorCache = new Map<string, { firstName: string; lastName: string }>();
 
     for (let i = 0; i < conductorIdList.length; i += 100) {
       const slice = conductorIdList.slice(i, i + 100);
@@ -218,27 +189,57 @@ export async function getBusesWithConductors(
 
     // Apply conductor names when missing
     for (const [, busData] of busMap.entries()) {
-      if (
-        !busData.conductorName ||
-        busData.conductorName === "Unknown Conductor"
-      ) {
+      if (!busData.conductorName || busData.conductorName === "Unknown Conductor") {
         const info = conductorCache.get(busData.conductorId);
         if (info) {
-          busData.conductorName =
-            `${info.firstName} ${info.lastName}`.trim() || "Unknown Conductor";
+          busData.conductorName = `${info.firstName} ${info.lastName}`.trim() || "Unknown Conductor";
         }
       }
     }
 
-    // 4) Build remittance cutoff per conductor (latest 'remitted' prior to or on endTimestamp)
-    const remittedAll = await listAllDocuments(
-      databaseId,
-      remittanceCollectionId,
-      [
-        Query.equal("status", "remitted"),
-        Query.lessThanEqual("verificationTimestamp", endTimestamp),
-      ]
-    );
+    // 4) Hydrate missing route values:
+    //    - Try latest route for the same bus+conductor within a 7-day buffer window.
+    //    - Fallback: infer from any trip in the selected range.
+    const missingRouteKeys = Array.from(busMap.entries())
+      .filter(([, v]) => !v.route || v.route.trim() === "" || v.route === "—")
+      .map(([k]) => k);
+
+    if (missingRouteKeys.length > 0) {
+      const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+      const bufferStartTs = Math.max(0, Number(startTimestamp) - sevenDaysMs).toString();
+
+      // Fetch recent routes in buffered window (batched)
+      const recentRoutes = await listAllDocuments(databaseId, routesCollectionId, [
+        Query.greaterThanEqual("timestamp", bufferStartTs),
+        Query.lessThanEqual("timestamp", endTimestamp),
+      ]);
+
+      // Index the latest route per busKey
+      const latestRouteByKey = new Map<string, any>();
+      for (const r of recentRoutes) {
+        const key = `${r.busNumber}-${r.conductorId}`;
+        if (!missingRouteKeys.includes(key)) continue;
+        const prev = latestRouteByKey.get(key);
+        if (!prev || Number(r.timestamp) > Number(prev.timestamp)) {
+          latestRouteByKey.set(key, r);
+        }
+      }
+
+      // Apply from latest routes
+      for (const key of missingRouteKeys) {
+        const item = latestRouteByKey.get(key);
+        if (item) {
+          const bus = busMap.get(key)!;
+          bus.route = `${item.from} → ${item.to}`;
+        }
+      }
+    }
+
+    // 5) Build remittance cutoff per conductor (latest 'remitted' prior to or on endTimestamp)
+    const remittedAll = await listAllDocuments(databaseId, remittanceCollectionId, [
+      Query.equal("status", "remitted"),
+      Query.lessThanEqual("verificationTimestamp", endTimestamp),
+    ]);
 
     const cutoffByConductor = new Map<string, string>();
     for (const rem of remittedAll) {
@@ -255,12 +256,32 @@ export async function getBusesWithConductors(
       }
     }
 
-    // 5) Fetch ALL trips in date range once (batched), then distribute to buses
+    // 6) Fetch ALL trips in date range once (batched), then distribute to buses
     const tripsAll = await listAllDocuments(databaseId, tripsCollectionId, [
       Query.greaterThanEqual("timestamp", startTimestamp),
       Query.lessThanEqual("timestamp", endTimestamp),
     ]);
 
+    // If any route still missing, try setting from a trip
+    const stillMissingRoute = new Set(
+      Array.from(busMap.entries())
+        .filter(([, v]) => !v.route || v.route.trim() === "" || v.route === "—")
+        .map(([k]) => k)
+    );
+
+    for (const trip of tripsAll) {
+      const key = `${trip.busNumber}-${trip.conductorId}`;
+      if (!busMap.has(key)) continue;
+
+      // Try to fill route from first available trip for this key
+      if (stillMissingRoute.has(key) && trip.from && trip.to) {
+        const bus = busMap.get(key)!;
+        bus.route = `${trip.from} → ${trip.to}`;
+        stillMissingRoute.delete(key);
+      }
+    }
+
+    // Now compute revenue (after cutoff)
     for (const trip of tripsAll) {
       const key = `${trip.busNumber}-${trip.conductorId}`;
       if (!busMap.has(key)) continue;
@@ -269,15 +290,14 @@ export async function getBusesWithConductors(
       const ts = Number(trip.timestamp);
       if (ts <= cutoff) continue; // only after last remittance
 
-      const fare =
-        Number.parseFloat(String(trip.fare).replace(/[^\d.-]/g, "")) || 0;
+      const fare = Number.parseFloat(String(trip.fare).replace(/[^\d.-]/g, "")) || 0;
       const bus = busMap.get(key)!;
       bus.totalRevenue += fare;
       if (trip.paymentMethod === "QR") bus.qrRevenue += fare;
       else bus.cashRevenue += fare;
     }
 
-    // 6) Determine the latest remittance per bus within the selected range and apply status/details
+    // 7) Determine the latest remittance per bus within the selected range and apply status/details
     const latestRemittanceMap = new Map<string, any>();
     for (const rem of remittancesInRange) {
       const busKey = `${rem.busNumber}-${rem.conductorId}`;
@@ -292,14 +312,19 @@ export async function getBusesWithConductors(
       const busData = busMap.get(busKey)!;
       busData.remittanceStatus = remittance.status || "pending";
       busData.cashRemitted = remittance.status === "remitted";
-      busData.remittanceAmount =
-        Number.parseFloat(remittance.amount ?? "0") || 0;
+      busData.remittanceAmount = Number.parseFloat(remittance.amount ?? "0") || 0;
       busData.remittanceNotes = remittance.notes || "";
       busData.remittanceTimestamp = Number.parseInt(remittance.timestamp) || 0;
       busData.revenueId = remittance.revenueId || "";
       if (remittance.verificationTimestamp) {
-        busData.verificationTimestamp =
-          Number.parseInt(remittance.verificationTimestamp) || 0;
+        busData.verificationTimestamp = Number.parseInt(remittance.verificationTimestamp) || 0;
+      }
+    }
+
+    // Final fallback for any remaining missing route
+    for (const [, busData] of busMap.entries()) {
+      if (!busData.route || busData.route.trim() === "") {
+        busData.route = "Unknown route";
       }
     }
 
@@ -325,54 +350,35 @@ export async function updateCashRemittanceStatus(
     const routesCollectionId = getRoutesCollectionId();
     const usersCollectionId = getUsersCollectionId();
 
-    if (
-      !databaseId ||
-      !remittanceCollectionId ||
-      !routesCollectionId ||
-      !usersCollectionId
-    ) {
+    if (!databaseId || !remittanceCollectionId || !routesCollectionId || !usersCollectionId) {
       throw new Error("Appwrite configuration missing");
     }
 
-    const busDetails = await databases.getDocument(
-      databaseId,
-      routesCollectionId,
-      busId
-    );
+    const busDetails = await databases.getDocument(databaseId, routesCollectionId, busId);
 
     // Conductor details
     let conductorName = "Unknown Conductor";
     try {
-      const usersResponse = await databases.listDocuments(
-        databaseId,
-        usersCollectionId,
-        [
-          Query.equal("userId", busDetails.conductorId),
-          Query.equal("role", "conductor"),
-          Query.limit(1),
-        ]
-      );
+      const usersResponse = await databases.listDocuments(databaseId, usersCollectionId, [
+        Query.equal("userId", busDetails.conductorId),
+        Query.equal("role", "conductor"),
+        Query.limit(1),
+      ]);
       if (usersResponse.documents.length > 0) {
         const user = usersResponse.documents[0];
-        conductorName =
-          `${user.firstname || ""} ${user.lastname || ""}`.trim() ||
-          "Unknown Conductor";
+        conductorName = `${user.firstname || ""} ${user.lastname || ""}`.trim() || "Unknown Conductor";
       }
     } catch (error) {
       console.error(`Error fetching conductor details:`, error);
     }
 
     // Find last remittance record for this bus
-    const existingRemittanceResponse = await databases.listDocuments(
-      databaseId,
-      remittanceCollectionId,
-      [
-        Query.equal("busId", busId),
-        Query.equal("conductorId", busDetails.conductorId),
-        Query.orderDesc("timestamp"),
-        Query.limit(1),
-      ]
-    );
+    const existingRemittanceResponse = await databases.listDocuments(databaseId, remittanceCollectionId, [
+      Query.equal("busId", busId),
+      Query.equal("conductorId", busDetails.conductorId),
+      Query.orderDesc("timestamp"),
+      Query.limit(1),
+    ]);
 
     const timestamp = Date.now().toString();
     const remittanceData: Record<string, any> = {
@@ -395,24 +401,12 @@ export async function updateCashRemittanceStatus(
           .toString()
           .padStart(4, "0")}`;
 
-      await databases.updateDocument(
-        databaseId,
-        remittanceCollectionId,
-        existing.$id,
-        remittanceData
-      );
+      await databases.updateDocument(databaseId, remittanceCollectionId, existing.$id, remittanceData);
     } else {
-      remittanceData.revenueId = `rev_${Date.now()}_${Math.floor(
-        Math.random() * 9999
-      )
+      remittanceData.revenueId = `rev_${Date.now()}_${Math.floor(Math.random() * 9999)
         .toString()
         .padStart(4, "0")}`;
-      await databases.createDocument(
-        databaseId,
-        remittanceCollectionId,
-        "unique()",
-        remittanceData
-      );
+      await databases.createDocument(databaseId, remittanceCollectionId, "unique()", remittanceData);
     }
 
     return true;
@@ -429,20 +423,14 @@ export async function verifyRemittance(remittanceId: string): Promise<boolean> {
   try {
     const databaseId = config.databaseId!;
     const remittanceCollectionId = getCashRemittanceCollectionId();
-    if (!databaseId || !remittanceCollectionId)
-      throw new Error("Appwrite configuration missing");
+    if (!databaseId || !remittanceCollectionId) throw new Error("Appwrite configuration missing");
 
     const verificationTimestamp = Date.now().toString();
 
-    await databases.updateDocument(
-      databaseId,
-      remittanceCollectionId,
-      remittanceId,
-      {
-        status: "remitted",
-        verificationTimestamp,
-      }
-    );
+    await databases.updateDocument(databaseId, remittanceCollectionId, remittanceId, {
+      status: "remitted",
+      verificationTimestamp,
+    });
 
     return true;
   } catch (error) {
@@ -463,8 +451,7 @@ export async function getRemittanceHistory(
   try {
     const databaseId = config.databaseId!;
     const remittanceCollectionId = getCashRemittanceCollectionId();
-    if (!databaseId || !remittanceCollectionId)
-      throw new Error("Appwrite configuration missing");
+    if (!databaseId || !remittanceCollectionId) throw new Error("Appwrite configuration missing");
 
     if (!startDate) {
       startDate = new Date();
@@ -473,9 +460,7 @@ export async function getRemittanceHistory(
     if (!endDate) endDate = new Date();
 
     const startTimestamp = startDate.getTime().toString();
-    const endTimestamp = new Date(endDate.setHours(23, 59, 59, 999))
-      .getTime()
-      .toString();
+    const endTimestamp = new Date(endDate.setHours(23, 59, 59, 999)).getTime().toString();
 
     const docs = await listAllDocuments(databaseId, remittanceCollectionId, [
       Query.equal("busId", busId),
@@ -495,9 +480,7 @@ export async function getRemittanceHistory(
       notes: doc.notes || "",
       timestamp: Number.parseInt(doc.timestamp) || 0,
       revenueId: doc.revenueId || "",
-      verificationTimestamp: doc.verificationTimestamp
-        ? Number.parseInt(doc.verificationTimestamp)
-        : undefined,
+      verificationTimestamp: doc.verificationTimestamp ? Number.parseInt(doc.verificationTimestamp) : undefined,
     }));
     items.sort((a, b) => b.timestamp - a.timestamp);
     return items;
@@ -510,9 +493,7 @@ export async function getRemittanceHistory(
 /**
  * Reset revenue after remittance is verified (placeholder)
  */
-export async function resetRevenueAfterRemittance(
-  _conductorId: string
-): Promise<boolean> {
+export async function resetRevenueAfterRemittance(_conductorId: string): Promise<boolean> {
   try {
     return true;
   } catch (error) {
