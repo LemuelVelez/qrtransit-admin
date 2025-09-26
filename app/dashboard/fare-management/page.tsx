@@ -780,12 +780,15 @@ export default function FareManagementPage() {
                                 </Table>
                             </div>
 
-                            {/* Responsive selection info + pagination: vertical on mobile, horizontal on larger screens */}
-                            <div className="flex flex-col sm:flex-row items-stretch sm:items-center sm:justify-end gap-2 py-4">
-                                <div className="text-muted-foreground text-sm w-full sm:flex-1">
-                                    {selectedRows.length} of {table.getFilteredRowModel().rows.length} row(s) selected.
+                            {/* Responsive selection info + pagination: STACKED vertically on mobile, horizontal from sm: */}
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 py-4">
+                                <div className="w-full">
+                                    <div className="text-muted-foreground text-sm text-center sm:text-left">
+                                        {selectedRows.length} of {table.getFilteredRowModel().rows.length} row(s) selected.
+                                    </div>
                                 </div>
-                                <div className="flex w-full sm:w-auto gap-2">
+
+                                <div className="flex w-full sm:w-auto flex-col sm:flex-row gap-2">
                                     <Button
                                         variant="outline"
                                         size="sm"
@@ -1043,7 +1046,7 @@ export default function FareManagementPage() {
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel className="bg-white/10 hover:bg白/20 text-white border-white/20 cursor-pointer">
+                        <AlertDialogCancel className="bg-white/10 hover:bg-white/20 text-white border-white/20 cursor-pointer">
                             Cancel
                         </AlertDialogCancel>
                         <AlertDialogAction

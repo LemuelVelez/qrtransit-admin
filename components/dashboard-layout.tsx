@@ -44,7 +44,8 @@ import {
   User,
   DollarSign,
   Image as ImageIcon,
-  Calculator, // ← added
+  Calculator,
+  ClipboardCheck, // ← added (Inspections)
 } from "lucide-react"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
@@ -156,12 +157,19 @@ export function DashboardLayout({ children, user }: { children: React.ReactNode;
                     label="Transaction Status"
                     isActive={pathname === "/dashboard/transaction-status"}
                   />
-                  {/* NEW: Fare Management */}
+                  {/* Fare Management */}
                   <CustomSidebarMenuButton
                     href="/dashboard/fare-management"
                     icon={Calculator}
                     label="Fare Management"
                     isActive={pathname === "/dashboard/fare-management"}
+                  />
+                  {/* Inspections (History of Cleared Buses) */}
+                  <CustomSidebarMenuButton
+                    href="/dashboard/inspections"
+                    icon={ClipboardCheck}
+                    label="Inspections"
+                    isActive={pathname === "/dashboard/inspections"}
                   />
                   <CustomSidebarMenuButton
                     href="/dashboard/bus-management"
