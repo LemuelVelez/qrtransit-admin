@@ -43,7 +43,8 @@ import {
   LogOut,
   User,
   DollarSign,
-  Image as ImageIcon, // ← added
+  Image as ImageIcon,
+  Calculator, // ← added
 } from "lucide-react"
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
@@ -155,13 +156,20 @@ export function DashboardLayout({ children, user }: { children: React.ReactNode;
                     label="Transaction Status"
                     isActive={pathname === "/dashboard/transaction-status"}
                   />
+                  {/* NEW: Fare Management */}
+                  <CustomSidebarMenuButton
+                    href="/dashboard/fare-management"
+                    icon={Calculator}
+                    label="Fare Management"
+                    isActive={pathname === "/dashboard/fare-management"}
+                  />
                   <CustomSidebarMenuButton
                     href="/dashboard/bus-management"
                     icon={DollarSign}
                     label="Bus Management"
                     isActive={pathname === "/dashboard/bus-management"}
                   />
-                  {/* NEW: Media manager */}
+                  {/* Media manager */}
                   <CustomSidebarMenuButton
                     href="/dashboard/media"
                     icon={ImageIcon}
