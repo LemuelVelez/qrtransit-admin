@@ -7,18 +7,50 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
 import { DatePickerWithRange } from "@/components/date-picker-with-range"
 import type { DateRange } from "react-day-picker"
-import { format, subDays, startOfDay, endOfDay } from "date-fns"
+import { format, subDays } from "date-fns"
 import { Download, Loader2 } from "lucide-react"
 import { getAnalyticsData } from "@/lib/trips-service"
 import { formatCurrency } from "@/lib/utils"
 import { RevenueChart } from "@/components/revenue-chart"
 import { PaymentMethodChart } from "@/components/payment-method-chart"
 
+/**
+ * Timezone-safe helpers (Asia/Manila). We clamp to full local day
+ * and convert to UTC Date objects before sending to the service.
+ */
+const toUTCDate = (local: Date) => {
+  return new Date(local.getTime() - local.getTimezoneOffset() * 60000)
+}
+
+const startOfLocalDay = (d: Date) => {
+  const x = new Date(d)
+  x.setHours(0, 0, 0, 0)
+  return x
+}
+
+const endOfLocalDay = (d: Date) => {
+  const x = new Date(d)
+  x.setHours(23, 59, 59, 999)
+  return x
+}
+
 function normalizeRange(range: DateRange | undefined): { from?: Date; to?: Date } {
   if (!range) return {}
-  const from = range.from ? startOfDay(range.from) : undefined
-  const to = range.to ? endOfDay(range.to) : (range.from ? endOfDay(range.from) : undefined)
-  return { from, to }
+  const hasFrom = !!range.from
+  const hasTo = !!range.to
+
+  if (!hasFrom && !hasTo) return {}
+
+  if (hasFrom && !hasTo) {
+    // Single-day strict window when only one day is chosen
+    const startLocal = startOfLocalDay(range.from as Date)
+    const endLocal = endOfLocalDay(range.from as Date)
+    return { from: toUTCDate(startLocal), to: toUTCDate(endLocal) }
+  }
+
+  const startLocal = startOfLocalDay(range.from as Date)
+  const endLocal = endOfLocalDay(range.to as Date)
+  return { from: toUTCDate(startLocal), to: toUTCDate(endLocal) }
 }
 
 /**
@@ -30,7 +62,6 @@ function normalizeRange(range: DateRange | undefined): { from?: Date; to?: Date 
  * - Export uses explicit "PHP" currency format as requested.
  * - Removed any sections not shown on this page (e.g., Top Routes, Recent Transactions).
  */
-
 export default function AnalyticsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isExporting, setIsExporting] = useState(false)

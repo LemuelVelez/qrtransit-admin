@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { DatePickerWithRange } from "@/components/date-picker-with-range"
 import type { DateRange } from "react-day-picker"
-import { format, subDays, startOfDay, endOfDay } from "date-fns"
+import { format } from "date-fns"
 import {
   Download,
   ArrowUp,
@@ -23,21 +23,65 @@ import { RevenueChart } from "@/components/revenue-chart"
 import { PaymentMethodChart } from "@/components/payment-method-chart"
 import { Skeleton } from "@/components/ui/skeleton"
 
+/**
+ * Timezone-safe helpers (Asia/Manila). We clamp to full local day
+ * and convert to UTC Date objects before sending to the service.
+ */
+const toUTCDate = (local: Date) => {
+  // Convert a local-time Date into the equivalent UTC clock time
+  return new Date(local.getTime() - local.getTimezoneOffset() * 60000)
+}
+
+const startOfLocalDay = (d: Date) => {
+  const x = new Date(d)
+  x.setHours(0, 0, 0, 0)
+  return x
+}
+
+const endOfLocalDay = (d: Date) => {
+  const x = new Date(d)
+  x.setHours(23, 59, 59, 999)
+  return x
+}
+
+/**
+ * Normalize a DateRange (possibly partial) to full-day UTC boundaries
+ * based on the user's local timezone (Asia/Manila).
+ * - If only one day is chosen, we use that single day's full window.
+ * - If both are chosen, we use full-day windows for each bound.
+ */
 function normalizeRange(range: DateRange | undefined): { from?: Date; to?: Date } {
   if (!range) return {}
-  const from = range.from ? startOfDay(range.from) : undefined
-  const to = range.to ? endOfDay(range.to) : (range.from ? endOfDay(range.from) : undefined)
-  return { from, to }
+  const hasFrom = !!range.from
+  const hasTo = !!range.to
+
+  if (!hasFrom && !hasTo) return {}
+
+  if (hasFrom && !hasTo) {
+    // Single click on a day => strict single-day window
+    const startLocal = startOfLocalDay(range.from as Date)
+    const endLocal = endOfLocalDay(range.from as Date)
+    return { from: toUTCDate(startLocal), to: toUTCDate(endLocal) }
+  }
+
+  // Both present: clamp both ends to full-day bounds
+  const startLocal = startOfLocalDay(range.from as Date)
+  const endLocal = endOfLocalDay(range.to as Date)
+  return { from: toUTCDate(startLocal), to: toUTCDate(endLocal) }
 }
 
 export default function DashboardPage() {
+  const today = new Date()
+
+  // Default to "Today" so it never mixes with yesterday by default
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: today,
+    to: today,
+  })
+
   const [isLoading, setIsLoading] = useState(true)
   const [isExporting, setIsExporting] = useState(false)
   const [analyticsData, setAnalyticsData] = useState<any>(null)
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: subDays(new Date(), 30),
-    to: new Date(),
-  })
 
   const fetchData = useCallback(async () => {
     setIsLoading(true)
@@ -357,7 +401,7 @@ export default function DashboardPage() {
                     {format(dateRange.from, "LLL dd, y")} - {format(dateRange.to, "LLL dd, y")}
                   </>
                 ) : (
-                  "Last 30 days"
+                  "Today"
                 )}
               </CardDescription>
             </CardHeader>
