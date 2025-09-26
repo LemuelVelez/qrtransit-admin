@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// lib/route-service.ts
 import { Query } from "appwrite";
 import { databases, config } from "./appwrite";
 
@@ -22,27 +24,70 @@ export const getUsersCollectionId = () => {
   return process.env.NEXT_PUBLIC_APPWRITE_USERS_COLLECTION_ID || "";
 };
 
+// ---- internal: fetch all with pagination (cursor, then offset fallback) ----
+async function listAllDocuments(
+  databaseId: string,
+  collectionId: string,
+  baseQueries: string[] = [],
+  batchSize = 100,
+  maxPages = 1000
+) {
+  try {
+    const all: any[] = [];
+    let cursor: string | null = null;
+
+    for (let page = 0; page < maxPages; page++) {
+      const queries = [...baseQueries, Query.limit(batchSize)];
+      if (cursor) queries.push(Query.cursorAfter(cursor));
+
+      const res = await databases.listDocuments(
+        databaseId,
+        collectionId,
+        queries
+      );
+      if (res.documents.length === 0) break;
+
+      all.push(...res.documents);
+      if (res.documents.length < batchSize) break;
+
+      cursor = res.documents[res.documents.length - 1].$id;
+    }
+
+    return all;
+  } catch {
+    const all: any[] = [];
+    for (let page = 0; page < maxPages; page++) {
+      const offset = page * batchSize;
+      const res = await databases.listDocuments(databaseId, collectionId, [
+        ...baseQueries,
+        Query.limit(batchSize),
+        Query.offset(offset),
+      ]);
+      if (res.documents.length === 0) break;
+      all.push(...res.documents);
+      if (res.documents.length < batchSize) break;
+    }
+    return all;
+  }
+}
+
 // Get conductor information by ID
 export async function getConductorById(
   conductorId: string
 ): Promise<{ name: string; role: string } | null> {
   try {
-    const databaseId = config.databaseId;
+    const databaseId = config.databaseId!;
     const collectionId = getUsersCollectionId();
-
-    if (!databaseId || !collectionId) {
+    if (!databaseId || !collectionId)
       throw new Error("Appwrite configuration missing");
-    }
 
-    // Query for users where userId matches the conductorId
     const response = await databases.listDocuments(databaseId, collectionId, [
       Query.equal("userId", conductorId),
+      Query.limit(1),
     ]);
 
-    // Check if we found a matching user
     if (response.documents.length > 0) {
       const user = response.documents[0];
-
       if (user && user.role === "conductor") {
         return {
           name: `${user.firstname} ${user.lastname}`.trim(),
@@ -50,7 +95,6 @@ export async function getConductorById(
         };
       }
     }
-
     return null;
   } catch (error) {
     console.error("Error getting conductor information:", error);
@@ -58,47 +102,39 @@ export async function getConductorById(
   }
 }
 
-// Get all routes with conductor information
+const mapRoute = (route: any): RouteInfo => ({
+  id: route.$id,
+  from: route.from,
+  to: route.to,
+  busNumber: route.busNumber,
+  timestamp: Number.parseInt(route.timestamp),
+  active: route.active === true,
+  conductorName: route.conductorName || "",
+  conductorId: route.conductorId,
+});
+
+// Get all routes (unlimited, controlled batching)
 export async function getAllRoutes(): Promise<RouteInfo[]> {
   try {
-    const databaseId = config.databaseId;
+    const databaseId = config.databaseId!;
     const collectionId = getRoutesCollectionId();
-
-    if (!databaseId || !collectionId) {
+    if (!databaseId || !collectionId)
       throw new Error("Appwrite configuration missing");
-    }
 
-    const response = await databases.listDocuments(databaseId, collectionId, [
-      Query.orderDesc("timestamp"),
-    ]);
+    const docs = await listAllDocuments(databaseId, collectionId);
+    const routes = docs.map(mapRoute);
 
-    const routes = response.documents.map((route) => ({
-      id: route.$id,
-      from: route.from,
-      to: route.to,
-      busNumber: route.busNumber,
-      timestamp: Number.parseInt(route.timestamp),
-      active: route.active === true,
-      conductorName: route.conductorName || "",
-      conductorId: route.conductorId,
-    }));
-
-    // Fetch conductor information for routes with missing conductor names
     const routesWithConductors = await Promise.all(
       routes.map(async (route) => {
         if (!route.conductorName && route.conductorId) {
-          const conductorInfo = await getConductorById(route.conductorId);
-          if (conductorInfo) {
-            return {
-              ...route,
-              conductorName: conductorInfo.name,
-            };
-          }
+          const info = await getConductorById(route.conductorId);
+          if (info) return { ...route, conductorName: info.name };
         }
         return route;
       })
     );
 
+    routesWithConductors.sort((a, b) => b.timestamp - a.timestamp);
     return routesWithConductors;
   } catch (error) {
     console.error("Error getting all routes:", error);
@@ -106,48 +142,30 @@ export async function getAllRoutes(): Promise<RouteInfo[]> {
   }
 }
 
-// Get active routes
+// Get active routes (unlimited, controlled batching)
 export async function getActiveRoutes(): Promise<RouteInfo[]> {
   try {
-    const databaseId = config.databaseId;
+    const databaseId = config.databaseId!;
     const collectionId = getRoutesCollectionId();
-
-    if (!databaseId || !collectionId) {
+    if (!databaseId || !collectionId)
       throw new Error("Appwrite configuration missing");
-    }
 
-    const response = await databases.listDocuments(databaseId, collectionId, [
+    const docs = await listAllDocuments(databaseId, collectionId, [
       Query.equal("active", true),
-      Query.orderDesc("timestamp"),
     ]);
+    const routes = docs.map(mapRoute);
 
-    const routes = response.documents.map((route) => ({
-      id: route.$id,
-      from: route.from,
-      to: route.to,
-      busNumber: route.busNumber,
-      timestamp: Number.parseInt(route.timestamp),
-      active: route.active === true,
-      conductorName: route.conductorName || "",
-      conductorId: route.conductorId,
-    }));
-
-    // Fetch conductor information for routes with missing conductor names
     const routesWithConductors = await Promise.all(
       routes.map(async (route) => {
         if (!route.conductorName && route.conductorId) {
-          const conductorInfo = await getConductorById(route.conductorId);
-          if (conductorInfo) {
-            return {
-              ...route,
-              conductorName: conductorInfo.name,
-            };
-          }
+          const info = await getConductorById(route.conductorId);
+          if (info) return { ...route, conductorName: info.name };
         }
         return route;
       })
     );
 
+    routesWithConductors.sort((a, b) => b.timestamp - a.timestamp);
     return routesWithConductors;
   } catch (error) {
     console.error("Error getting active routes:", error);
@@ -155,50 +173,32 @@ export async function getActiveRoutes(): Promise<RouteInfo[]> {
   }
 }
 
-// Get routes by bus number
+// Get routes by bus number (unlimited, controlled batching)
 export async function getRoutesByBusNumber(
   busNumber: string
 ): Promise<RouteInfo[]> {
   try {
-    const databaseId = config.databaseId;
+    const databaseId = config.databaseId!;
     const collectionId = getRoutesCollectionId();
-
-    if (!databaseId || !collectionId) {
+    if (!databaseId || !collectionId)
       throw new Error("Appwrite configuration missing");
-    }
 
-    const response = await databases.listDocuments(databaseId, collectionId, [
+    const docs = await listAllDocuments(databaseId, collectionId, [
       Query.equal("busNumber", busNumber),
-      Query.orderDesc("timestamp"),
     ]);
+    const routes = docs.map(mapRoute);
 
-    const routes = response.documents.map((route) => ({
-      id: route.$id,
-      from: route.from,
-      to: route.to,
-      busNumber: route.busNumber,
-      timestamp: Number.parseInt(route.timestamp),
-      active: route.active === true,
-      conductorName: route.conductorName || "",
-      conductorId: route.conductorId,
-    }));
-
-    // Fetch conductor information for routes with missing conductor names
     const routesWithConductors = await Promise.all(
       routes.map(async (route) => {
         if (!route.conductorName && route.conductorId) {
-          const conductorInfo = await getConductorById(route.conductorId);
-          if (conductorInfo) {
-            return {
-              ...route,
-              conductorName: conductorInfo.name,
-            };
-          }
+          const info = await getConductorById(route.conductorId);
+          if (info) return { ...route, conductorName: info.name };
         }
         return route;
       })
     );
 
+    routesWithConductors.sort((a, b) => b.timestamp - a.timestamp);
     return routesWithConductors;
   } catch (error) {
     console.error("Error getting routes by bus number:", error);
@@ -212,18 +212,14 @@ export async function updateRouteStatus(
   active: boolean
 ): Promise<boolean> {
   try {
-    const databaseId = config.databaseId;
+    const databaseId = config.databaseId!;
     const collectionId = getRoutesCollectionId();
-
-    if (!databaseId || !collectionId) {
+    if (!databaseId || !collectionId)
       throw new Error("Appwrite configuration missing");
-    }
 
-    // Only update the active status without endTimestamp to fix the Appwrite error
     await databases.updateDocument(databaseId, collectionId, routeId, {
-      active: active,
+      active,
     });
-
     return true;
   } catch (error) {
     console.error("Error updating route status:", error);
@@ -231,51 +227,34 @@ export async function updateRouteStatus(
   }
 }
 
+// Get buses by route (unlimited, controlled batching)
 export async function getBusesByRoute(
   from: string,
   to: string
 ): Promise<RouteInfo[]> {
   try {
-    const databaseId = config.databaseId;
+    const databaseId = config.databaseId!;
     const collectionId = getRoutesCollectionId();
-
-    if (!databaseId || !collectionId) {
+    if (!databaseId || !collectionId)
       throw new Error("Appwrite configuration missing");
-    }
 
-    const response = await databases.listDocuments(databaseId, collectionId, [
+    const docs = await listAllDocuments(databaseId, collectionId, [
       Query.equal("from", from),
       Query.equal("to", to),
-      Query.orderDesc("timestamp"),
     ]);
+    const routes = docs.map(mapRoute);
 
-    const routes = response.documents.map((route) => ({
-      id: route.$id,
-      from: route.from,
-      to: route.to,
-      busNumber: route.busNumber,
-      timestamp: Number.parseInt(route.timestamp),
-      active: route.active === true,
-      conductorName: route.conductorName || "",
-      conductorId: route.conductorId,
-    }));
-
-    // Fetch conductor information for routes with missing conductor names
     const routesWithConductors = await Promise.all(
       routes.map(async (route) => {
         if (!route.conductorName && route.conductorId) {
-          const conductorInfo = await getConductorById(route.conductorId);
-          if (conductorInfo) {
-            return {
-              ...route,
-              conductorName: conductorInfo.name,
-            };
-          }
+          const info = await getConductorById(route.conductorId);
+          if (info) return { ...route, conductorName: info.name };
         }
         return route;
       })
     );
 
+    routesWithConductors.sort((a, b) => b.timestamp - a.timestamp);
     return routesWithConductors;
   } catch (error) {
     console.error("Error getting buses by route:", error);

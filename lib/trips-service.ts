@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// lib/trips-service.ts
 import { databases, config } from "./appwrite";
 import { Query } from "appwrite";
 
@@ -25,210 +27,194 @@ export const getTripsCollectionId = () => {
   return process.env.NEXT_PUBLIC_APPWRITE_TRIPS_COLLECTION_ID || "";
 };
 
-// Get all trips
-export async function getAllTrips(): Promise<Trip[]> {
+// ---- internal: fetch all with pagination (cursor, then offset fallback) ----
+async function listAllDocuments(
+  databaseId: string,
+  collectionId: string,
+  baseQueries: string[] = [],
+  batchSize = 100,
+  maxPages = 1000
+) {
+  // Try cursor-based pagination first (preferred)
   try {
-    const databaseId = config.databaseId;
-    const collectionId = getTripsCollectionId();
+    const all: any[] = [];
+    let cursor: string | null = null;
 
-    if (!databaseId || !collectionId) {
-      throw new Error("Appwrite configuration missing");
+    for (let page = 0; page < maxPages; page++) {
+      const queries = [...baseQueries, Query.limit(batchSize)];
+      if (cursor) queries.push(Query.cursorAfter(cursor));
+
+      const res = await databases.listDocuments(
+        databaseId,
+        collectionId,
+        queries
+      );
+      if (res.documents.length === 0) break;
+
+      all.push(...res.documents);
+      if (res.documents.length < batchSize) break;
+
+      cursor = res.documents[res.documents.length - 1].$id;
     }
 
-    const response = await databases.listDocuments(databaseId, collectionId, [
-      Query.orderDesc("timestamp"),
-    ]);
+    return all;
+  } catch {
+    // Fallback to offset-based pagination
+    const all: any[] = [];
+    for (let page = 0; page < maxPages; page++) {
+      const offset = page * batchSize;
+      const res = await databases.listDocuments(databaseId, collectionId, [
+        ...baseQueries,
+        Query.limit(batchSize),
+        Query.offset(offset),
+      ]);
+      if (res.documents.length === 0) break;
+      all.push(...res.documents);
+      if (res.documents.length < batchSize) break;
+    }
+    return all;
+  }
+}
 
-    return response.documents.map((doc) => ({
-      id: doc.$id,
-      passengerName: doc.passengerName || "Unknown Passenger",
-      fare: doc.fare || "₱0.00",
-      from: doc.from || "Unknown",
-      to: doc.to || "Unknown",
-      timestamp: Number.parseInt(doc.timestamp) || Date.now(),
-      paymentMethod: doc.paymentMethod || "QR",
-      transactionId: doc.transactionId || "0000000000",
-      conductorId: doc.conductorId,
-      passengerPhoto: doc.passengerPhoto,
-      passengerType: doc.passengerType,
-      kilometer: doc.kilometer,
-      totalTrips: doc.totalTrips,
-      busNumber: doc.busNumber || "",
-    }));
+const mapTrip = (doc: any): Trip => ({
+  id: doc.$id,
+  passengerName: doc.passengerName || "Unknown Passenger",
+  fare: doc.fare || "₱0.00",
+  from: doc.from || "Unknown",
+  to: doc.to || "Unknown",
+  timestamp: Number.parseInt(doc.timestamp) || Date.now(),
+  paymentMethod: doc.paymentMethod || "QR",
+  transactionId: doc.transactionId || "0000000000",
+  conductorId: doc.conductorId,
+  passengerPhoto: doc.passengerPhoto,
+  passengerType: doc.passengerType,
+  kilometer: doc.kilometer,
+  totalTrips: doc.totalTrips,
+  totalPassengers: doc.totalPassengers,
+  totalRevenue: doc.totalRevenue,
+  busNumber: doc.busNumber || "",
+});
+
+// Get all trips (unlimited, controlled batching)
+export async function getAllTrips(): Promise<Trip[]> {
+  try {
+    const databaseId = config.databaseId!;
+    const collectionId = getTripsCollectionId();
+    if (!databaseId || !collectionId)
+      throw new Error("Appwrite configuration missing");
+
+    const docs = await listAllDocuments(databaseId, collectionId);
+    const trips = docs.map(mapTrip);
+    // consistent newest-first ordering
+    trips.sort((a, b) => b.timestamp - a.timestamp);
+    return trips;
   } catch (error) {
     console.error("Error getting all trips:", error);
     return [];
   }
 }
 
-// Get trips by date range
+// Get trips by date range (unlimited, controlled batching)
 export async function getTripsByDateRange(
   startDate: Date,
   endDate: Date,
   conductorId?: string
 ): Promise<Trip[]> {
   try {
-    const databaseId = config.databaseId;
+    const databaseId = config.databaseId!;
     const collectionId = getTripsCollectionId();
-
-    if (!databaseId || !collectionId) {
+    if (!databaseId || !collectionId)
       throw new Error("Appwrite configuration missing");
-    }
 
-    // Convert dates to timestamps (as strings)
     const startTimestamp = startDate.getTime().toString();
     const endTimestamp = endDate.setHours(23, 59, 59, 999).toString();
 
-    const queries = [
+    const baseQueries = [
       Query.greaterThanEqual("timestamp", startTimestamp),
       Query.lessThanEqual("timestamp", endTimestamp),
-      Query.orderDesc("timestamp"),
     ];
+    if (conductorId) baseQueries.push(Query.equal("conductorId", conductorId));
 
-    // Add conductor filter if provided
-    if (conductorId) {
-      queries.push(Query.equal("conductorId", conductorId));
-    }
-
-    const response = await databases.listDocuments(
-      databaseId,
-      collectionId,
-      queries
-    );
-
-    return response.documents.map((doc) => ({
-      id: doc.$id,
-      passengerName: doc.passengerName || "Unknown Passenger",
-      fare: doc.fare || "₱0.00",
-      from: doc.from || "Unknown",
-      to: doc.to || "Unknown",
-      timestamp: Number.parseInt(doc.timestamp) || Date.now(),
-      paymentMethod: doc.paymentMethod || "QR",
-      transactionId: doc.transactionId || "0000000000",
-      conductorId: doc.conductorId,
-      passengerPhoto: doc.passengerPhoto,
-      passengerType: doc.passengerType,
-      kilometer: doc.kilometer,
-      totalTrips: doc.totalTrips,
-      busNumber: doc.busNumber || "",
-    }));
+    const docs = await listAllDocuments(databaseId, collectionId, baseQueries);
+    const trips = docs.map(mapTrip);
+    trips.sort((a, b) => b.timestamp - a.timestamp);
+    return trips;
   } catch (error) {
     console.error("Error getting trips by date range:", error);
     return [];
   }
 }
 
-// Get trips by bus number
+// Get trips by bus number (unlimited, controlled batching)
 export async function getTripsByBusNumber(busNumber: string): Promise<Trip[]> {
   try {
-    const databaseId = config.databaseId;
+    const databaseId = config.databaseId!;
     const collectionId = getTripsCollectionId();
-
-    if (!databaseId || !collectionId) {
+    if (!databaseId || !collectionId)
       throw new Error("Appwrite configuration missing");
-    }
 
-    const response = await databases.listDocuments(databaseId, collectionId, [
+    const docs = await listAllDocuments(databaseId, collectionId, [
       Query.equal("busNumber", busNumber),
-      Query.orderDesc("timestamp"),
     ]);
-
-    return response.documents.map((doc) => ({
-      id: doc.$id,
-      passengerName: doc.passengerName || "Unknown Passenger",
-      fare: doc.fare || "₱0.00",
-      from: doc.from || "Unknown",
-      to: doc.to || "Unknown",
-      timestamp: Number.parseInt(doc.timestamp) || Date.now(),
-      paymentMethod: doc.paymentMethod || "QR",
-      transactionId: doc.transactionId || "0000000000",
-      conductorId: doc.conductorId,
-      passengerPhoto: doc.passengerPhoto,
-      passengerType: doc.passengerType,
-      kilometer: doc.kilometer,
-      totalTrips: doc.totalTrips,
-      busNumber: doc.busNumber || "",
-    }));
+    const trips = docs.map(mapTrip);
+    trips.sort((a, b) => b.timestamp - a.timestamp);
+    return trips;
   } catch (error) {
     console.error("Error getting trips by bus number:", error);
     return [];
   }
 }
 
-// Get trips by route (from and to)
+// Get trips by route (unlimited, controlled batching)
 export async function getTripsByRoute(
   from: string,
   to: string
 ): Promise<Trip[]> {
   try {
-    const databaseId = config.databaseId;
+    const databaseId = config.databaseId!;
     const collectionId = getTripsCollectionId();
-
-    if (!databaseId || !collectionId) {
+    if (!databaseId || !collectionId)
       throw new Error("Appwrite configuration missing");
-    }
 
-    const response = await databases.listDocuments(databaseId, collectionId, [
+    const docs = await listAllDocuments(databaseId, collectionId, [
       Query.equal("from", from),
       Query.equal("to", to),
-      Query.orderDesc("timestamp"),
     ]);
-
-    return response.documents.map((doc) => ({
-      id: doc.$id,
-      passengerName: doc.passengerName || "Unknown Passenger",
-      fare: doc.fare || "₱0.00",
-      from: doc.from || "Unknown",
-      to: doc.to || "Unknown",
-      timestamp: Number.parseInt(doc.timestamp) || Date.now(),
-      paymentMethod: doc.paymentMethod || "QR",
-      transactionId: doc.transactionId || "0000000000",
-      conductorId: doc.conductorId,
-      passengerPhoto: doc.passengerPhoto,
-      passengerType: doc.passengerType,
-      kilometer: doc.kilometer,
-      totalTrips: doc.totalTrips,
-      busNumber: doc.busNumber || "",
-    }));
+    const trips = docs.map(mapTrip);
+    trips.sort((a, b) => b.timestamp - a.timestamp);
+    return trips;
   } catch (error) {
     console.error("Error getting trips by route:", error);
     return [];
   }
 }
 
-// Get analytics data
+// Get analytics data (uses unlimited paginated fetch under the hood)
 export async function getAnalyticsData(startDate?: Date, endDate?: Date) {
   try {
-    const databaseId = config.databaseId;
+    const databaseId = config.databaseId!;
     const collectionId = getTripsCollectionId();
-
-    if (!databaseId || !collectionId) {
+    if (!databaseId || !collectionId)
       throw new Error("Appwrite configuration missing");
-    }
 
-    // If no dates provided, use last 30 days
     if (!startDate || !endDate) {
       endDate = new Date();
       startDate = new Date();
       startDate.setDate(endDate.getDate() - 30);
     }
 
-    // Calculate previous period (same duration)
     const currentPeriodDuration = endDate.getTime() - startDate.getTime();
-    const previousPeriodEndDate = new Date(startDate.getTime() - 1); // 1ms before current period start
+    const previousPeriodEndDate = new Date(startDate.getTime() - 1);
     const previousPeriodStartDate = new Date(
       previousPeriodEndDate.getTime() - currentPeriodDuration
     );
 
-    // Get current period data
     const currentPeriodData = await getAnalyticsForPeriod(
       databaseId,
       collectionId,
       startDate,
       endDate
     );
-
-    // Get previous period data
     const previousPeriodData = await getAnalyticsForPeriod(
       databaseId,
       collectionId,
@@ -236,38 +222,27 @@ export async function getAnalyticsData(startDate?: Date, endDate?: Date) {
       previousPeriodEndDate
     );
 
-    // Calculate percentage changes
-    const calculatePercentageChange = (current: number, previous: number) => {
-      if (previous === 0) return current > 0 ? 100 : 0;
-      return ((current - previous) / previous) * 100;
-    };
-
-    const revenueChange = calculatePercentageChange(
-      currentPeriodData.totalRevenue,
-      previousPeriodData.totalRevenue
-    );
-
-    const tripsChange = calculatePercentageChange(
-      currentPeriodData.totalTrips,
-      previousPeriodData.totalTrips
-    );
-
-    const qrRevenueChange = calculatePercentageChange(
-      currentPeriodData.qrRevenue,
-      previousPeriodData.qrRevenue
-    );
-
-    const cashRevenueChange = calculatePercentageChange(
-      currentPeriodData.cashRevenue,
-      previousPeriodData.cashRevenue
-    );
+    const pct = (cur: number, prev: number) =>
+      prev === 0 ? (cur > 0 ? 100 : 0) : ((cur - prev) / prev) * 100;
 
     return {
       ...currentPeriodData,
-      revenueChange,
-      tripsChange,
-      qrRevenueChange,
-      cashRevenueChange,
+      revenueChange: pct(
+        currentPeriodData.totalRevenue,
+        previousPeriodData.totalRevenue
+      ),
+      tripsChange: pct(
+        currentPeriodData.totalTrips,
+        previousPeriodData.totalTrips
+      ),
+      qrRevenueChange: pct(
+        currentPeriodData.qrRevenue,
+        previousPeriodData.qrRevenue
+      ),
+      cashRevenueChange: pct(
+        currentPeriodData.cashRevenue,
+        previousPeriodData.cashRevenue
+      ),
     };
   } catch (error) {
     console.error("Error getting analytics data:", error);
@@ -275,7 +250,7 @@ export async function getAnalyticsData(startDate?: Date, endDate?: Date) {
   }
 }
 
-// Helper function to get analytics for a specific period
+// Helper function to get analytics for a specific period (unlimited fetch)
 async function getAnalyticsForPeriod(
   databaseId: string,
   collectionId: string,
@@ -283,79 +258,57 @@ async function getAnalyticsForPeriod(
   endDate: Date
 ) {
   try {
-    // Convert dates to timestamps (as strings)
     const startTimestamp = startDate.getTime().toString();
     const endTimestamp = new Date(endDate.getTime())
       .setHours(23, 59, 59, 999)
       .toString();
 
-    const queries = [
+    const docs = await listAllDocuments(databaseId, collectionId, [
       Query.greaterThanEqual("timestamp", startTimestamp),
       Query.lessThanEqual("timestamp", endTimestamp),
-      Query.orderDesc("timestamp"),
-    ];
+    ]);
 
-    const response = await databases.listDocuments(
-      databaseId,
-      collectionId,
-      queries
-    );
-    const trips = response.documents;
-
-    // Calculate analytics
     let totalRevenue = 0;
     let cashRevenue = 0;
     let qrRevenue = 0;
-    const totalTrips = trips.length;
     const routeCounts: Record<string, number> = {};
     const busCounts: Record<string, number> = {};
     const conductorCounts: Record<string, number> = {};
     const dailyRevenue: Record<string, number> = {};
 
-    trips.forEach((trip) => {
-      // Calculate revenue
-      const fare = Number.parseFloat(trip.fare.replace(/[^\d.-]/g, "")) || 0;
+    docs.forEach((trip: any) => {
+      const fare =
+        Number.parseFloat(String(trip.fare).replace(/[^\d.-]/g, "")) || 0;
       totalRevenue += fare;
 
-      if (trip.paymentMethod === "QR") {
-        qrRevenue += fare;
-      } else {
-        cashRevenue += fare;
-      }
+      if (trip.paymentMethod === "QR") qrRevenue += fare;
+      else cashRevenue += fare;
 
-      // Count routes
       const route = `${trip.from} → ${trip.to}`;
       routeCounts[route] = (routeCounts[route] || 0) + 1;
 
-      // Count buses
-      if (trip.busNumber) {
+      if (trip.busNumber)
         busCounts[trip.busNumber] = (busCounts[trip.busNumber] || 0) + 1;
-      }
-
-      // Count conductors
-      if (trip.conductorId) {
+      if (trip.conductorId)
         conductorCounts[trip.conductorId] =
           (conductorCounts[trip.conductorId] || 0) + 1;
-      }
 
-      // Daily revenue
       const day = new Date(Number(trip.timestamp)).toISOString().split("T")[0];
       dailyRevenue[day] = (dailyRevenue[day] || 0) + fare;
     });
 
-    // Sort and get top routes
+    const totalTrips = docs.length;
+
     const topRoutes = Object.entries(routeCounts)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
       .map(([route, count]) => ({ route, count }));
 
-    // Sort and get top buses
     const topBuses = Object.entries(busCounts)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
       .map(([busNumber, count]) => ({ busNumber, count }));
 
-    // Format daily revenue for charts
     const dailyRevenueData = Object.entries(dailyRevenue)
       .sort((a, b) => a[0].localeCompare(b[0]))
       .map(([date, amount]) => ({ date, amount }));
@@ -371,7 +324,6 @@ async function getAnalyticsForPeriod(
     };
   } catch (error) {
     console.error("Error getting analytics for period:", error);
-    // Return empty data structure on error
     return {
       totalRevenue: 0,
       cashRevenue: 0,
