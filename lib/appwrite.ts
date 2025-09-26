@@ -318,3 +318,28 @@ export const confirmPasswordReset = async (
   // The updateRecovery method only accepts 3 parameters
   await account.updateRecovery(userId, secret, password);
 };
+
+/**
+ * Change password for the currently authenticated user.
+ * Requires the user's current password for verification.
+ */
+export async function changePassword(
+  currentPassword: string,
+  newPassword: string
+) {
+  if (!currentPassword || !newPassword) {
+    throw new Error("Both current and new password are required.");
+  }
+  if (newPassword.length < 8) {
+    throw new Error("New password must be at least 8 characters long.");
+  }
+
+  try {
+    // Appwrite JS SDK: updatePassword(newPassword, oldPassword)
+    await account.updatePassword(newPassword, currentPassword);
+    return { success: true };
+  } catch (error) {
+    console.error("Change password error:", error);
+    throw error;
+  }
+}
