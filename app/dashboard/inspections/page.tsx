@@ -552,7 +552,7 @@ export default function InspectionsPage() {
 
             {/* Detail Drawer */}
             <Sheet open={detailOpen} onOpenChange={setDetailOpen}>
-                <SheetContent side="right" className="w-full sm:max-w-xl">
+                <SheetContent side="right" className="w-full sm:max-w-xl bg-black">
                     <SheetHeader>
                         <SheetTitle className="flex items-center gap-2">
                             <Calendar className="h-5 w-5 text-muted-foreground" />
