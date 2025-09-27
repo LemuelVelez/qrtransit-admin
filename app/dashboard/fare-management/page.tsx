@@ -142,6 +142,11 @@ export default function FareManagementPage() {
         active: boolean
     }>({ kilometer: "", fare: "", busType: "", description: "", active: true })
 
+    const isFareFormValid =
+        fareForm.kilometer !== "" &&
+        fareForm.fare !== "" &&
+        fareForm.busType.trim() !== ""
+
     const openCreateFare = () => {
         setFareEditing(null)
         setFareForm({ kilometer: "", fare: "", busType: "", description: "", active: true })
@@ -161,26 +166,31 @@ export default function FareManagementPage() {
     }
 
     const saveFare = async () => {
-        if (!fareForm.kilometer || !fareForm.fare) {
-            alert("Please provide both Kilometer and Fare.")
+        const km = String(fareForm.kilometer).trim()
+        const peso = String(fareForm.fare).trim()
+        const bt = fareForm.busType.trim()
+
+        if (!km || !peso || !bt) {
+            alert("Please provide Bus Type, Kilometer, and Fare (₱). All three are required.")
             return
         }
+
         setFareSaving(true)
         try {
             if (fareEditing) {
                 await updateFare(fareEditing.id, {
-                    kilometer: String(fareForm.kilometer),
-                    fare: String(fareForm.fare),
+                    kilometer: km,
+                    fare: peso,
                     description: fareForm.description || "",
-                    busType: fareForm.busType.trim() || undefined,
+                    busType: bt,
                     active: !!fareForm.active,
                 })
             } else {
                 await createFare({
-                    kilometer: String(fareForm.kilometer),
-                    fare: String(fareForm.fare),
+                    kilometer: km,
+                    fare: peso,
                     description: fareForm.description || "",
-                    busType: fareForm.busType.trim() || undefined,
+                    busType: bt,
                     active: !!fareForm.active,
                 })
             }
@@ -732,11 +742,9 @@ export default function FareManagementPage() {
                             <div
                                 className={cn(
                                     "overflow-x-auto rounded-md border",
-                                    // vivid horizontal scrollbar
                                     "[&::-webkit-scrollbar]:h-3 [&::-webkit-scrollbar-track]:bg-emerald-100",
                                     "[&::-webkit-scrollbar-thumb]:bg-emerald-500 [&::-webkit-scrollbar-thumb]:rounded-full",
                                     "[&::-webkit-scrollbar-thumb:hover]:bg-emerald-600",
-                                    // subtle hover depth
                                     "transition-shadow hover:shadow-sm"
                                 )}
                             >
@@ -863,17 +871,17 @@ export default function FareManagementPage() {
 
             {/* ------------------------ Fare Create/Edit Dialog ------------------------ */}
             <Dialog open={fareDialogOpen} onOpenChange={setFareDialogOpen}>
-                <DialogContent className="sm:max-w-[520px]">
+                <DialogContent className="sm:max-w-[520px] bg-black">
                     <DialogHeader>
                         <DialogTitle>{fareEditing ? "Edit Fare Row" : "Add Fare Row"}</DialogTitle>
                         <DialogDescription>
-                            Distance-based base fare. Bus Type is optional (label only).
+                            Bus Type, Kilometer, and Fare (₱) are required.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-2">
                         <div className="grid grid-cols-4 items-center gap-3">
                             <Label htmlFor="km" className="text-right">
-                                Kilometer
+                                Kilometer <span className="text-red-500">*</span>
                             </Label>
                             <Input
                                 id="km"
@@ -883,11 +891,13 @@ export default function FareManagementPage() {
                                 onChange={(e) => setFareForm((s) => ({ ...s, kilometer: e.target.value }))}
                                 className="col-span-3"
                                 placeholder="e.g. 10"
+                                required
+                                aria-required="true"
                             />
                         </div>
                         <div className="grid grid-cols-4 items-center gap-3">
                             <Label htmlFor="fare" className="text-right">
-                                Fare (₱)
+                                Fare (₱) <span className="text-red-500">*</span>
                             </Label>
                             <Input
                                 id="fare"
@@ -897,18 +907,22 @@ export default function FareManagementPage() {
                                 onChange={(e) => setFareForm((s) => ({ ...s, fare: e.target.value }))}
                                 className="col-span-3"
                                 placeholder="e.g. 25"
+                                required
+                                aria-required="true"
                             />
                         </div>
                         <div className="grid grid-cols-4 items-center gap-3">
                             <Label htmlFor="bt" className="text-right">
-                                Bus Type
+                                Bus Type <span className="text-red-500">*</span>
                             </Label>
                             <Input
                                 id="bt"
                                 value={fareForm.busType}
                                 onChange={(e) => setFareForm((s) => ({ ...s, busType: e.target.value }))}
                                 className="col-span-3"
-                                placeholder='Optional label like "Aircon"'
+                                placeholder='e.g. "Aircon"'
+                                required
+                                aria-required="true"
                             />
                         </div>
                         <div className="grid grid-cols-4 items-center gap-3">
@@ -942,7 +956,12 @@ export default function FareManagementPage() {
                         >
                             Cancel
                         </Button>
-                        <Button onClick={saveFare} disabled={fareSaving} className="text-white cursor-pointer">
+                        <Button
+                            onClick={saveFare}
+                            disabled={fareSaving || !isFareFormValid}
+                            className="text-white cursor-pointer"
+                            title={!isFareFormValid ? "Fill out Bus Type, Kilometer, and Fare (₱)" : undefined}
+                        >
                             {fareSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                             Save
                         </Button>
