@@ -41,7 +41,6 @@ import {
   BarChart3,
   QrCode,
   LogOut,
-  User,
   DollarSign,
   Image as ImageIcon,
   Calculator,
@@ -208,7 +207,7 @@ export function DashboardLayout({ children, user }: { children: React.ReactNode;
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
-                    className="w-full justify-start px-2 hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--accent-foreground))]"
+                    className="w-full justify-start px-2 hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--accent-foreground))] cursor-pointer"
                   >
                     <Avatar className="h-6 w-6 mr-2">
                       <AvatarImage src={user?.avatar} alt={user?.name || "User"} />
@@ -223,7 +222,7 @@ export function DashboardLayout({ children, user }: { children: React.ReactNode;
                     </span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-56">
+                <DropdownMenuContent align="start" className="w-full bg-black">
                   <DropdownMenuLabel>My Account</DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
@@ -243,7 +242,7 @@ export function DashboardLayout({ children, user }: { children: React.ReactNode;
                 <ModeToggle />
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                    <Button variant="ghost" className="relative h-8 w-8 rounded-full cursor-pointer">
                       <Avatar className="h-8 w-8">
                         <AvatarImage src={user?.avatar} alt={user?.name || "User"} />
                         <AvatarFallback className="bg-[hsl(var(--secondary))] text-[hsl(var(--secondary-foreground))]">
@@ -252,21 +251,12 @@ export function DashboardLayout({ children, user }: { children: React.ReactNode;
                       </Avatar>
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
+                  <DropdownMenuContent align="end" className="bg-black">
                     <DropdownMenuLabel>
                       {user?.firstname && user?.lastname
                         ? `${user.firstname} ${user.lastname}`
                         : user?.username || "Admin User"}
                     </DropdownMenuLabel>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem className="cursor-pointer">
-                      <User className="mr-2 h-4 w-4" />
-                      <span>Profile</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="cursor-pointer">
-                      <Settings className="mr-2 h-4 w-4" />
-                      <span>Settings</span>
-                    </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
                       <LogOut className="mr-2 h-4 w-4" />

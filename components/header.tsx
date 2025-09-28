@@ -114,7 +114,7 @@ export function DashboardHeader({ user, onLogout }: HeaderProps) {
             </Avatar>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
+        <DropdownMenuContent align="end" className="bg-black">
           <DropdownMenuLabel>
             {user?.firstname && user?.lastname ? `${user.firstname} ${user.lastname}` : user?.username || "Admin User"}
           </DropdownMenuLabel>
